@@ -1,3 +1,4 @@
+from typing import List
 from mne._fiff.meas_info import Info
 from mne.io.eeglab.eeglab import RawEEGLAB
 from mne.channels.montage import DigMontage
@@ -25,7 +26,7 @@ def read_eeg(
 
     for ch in inf['chs']:
         # Первые 3 значения в loc нас интересуют больше всего
-        if np.isnan(ch['loc'][0] or ch['loc'][1] or ch['loc'][2]):
+        if np.any(np.isnan(ch['loc'][:3])):
             bad_chs.append(ch['ch_name'])
 
     if bad_chs:
@@ -65,7 +66,44 @@ def get_montage(
     return new_montage
 
 
-def save_pos(
+def get_zone(
+    ch: str,
+) -> str:
+    # Деление каналов именно на такие зоны взято из файлов Ши Хаонаня!
+    # Также при построении отчасти использовалась эта публикация:
+    # https://www.researchgate.net/publication/380786384_Differences_in_Electroencephalography_Power_Levels_between_Poor_and_Good_Performance_in_Attentional_Tasks
+
+    if ch in ['lpa', 'rpa', 'nasion']:
+        return 'ref' # Референсные каналы типа
+
+    if ch.startswith('F') or ch.startswith('AF'): # F, FC, Fp, FT
+        try:
+            cnum = int(ch[-1]) # Осторожно, хрупкий код!
+            return 'LF' if (cnum % 2 != 0) else 'RF'
+
+        except Exception: # Fz, FCz, FPz, ...
+            return 'MF'
+    
+    if ch.startswith('C') or ch.startswith('T'): # C, CP, T
+        try:
+            cnum = int(ch[-1]) # Осторожно, хрупкий код!
+            return 'LT' if (cnum % 2 != 0) else 'RT'
+
+        except Exception: # Cz, CPz, Tz, ...
+            return 'MC'
+    
+    if ch.startswith('P') or ch.startswith('O'): # P, PO, O
+        try:
+            cnum = int(ch[-1]) # Осторожно, хрупкий код!
+            return 'LP' if (cnum % 2 != 0) else 'RP'
+
+        except Exception: # Pz, POz, Oz, ...
+            return 'MP'
+    
+    return '???'
+
+
+def save_channels(
     montage: DigMontage,
     path_out: Path
 ) -> None:
@@ -85,7 +123,25 @@ def save_pos(
     df.to_csv(path_out, index=False)
 
 
-@click.command(name='MAT Python Opener & Converter, 25-12-09')
+def save_zones(
+    montage: DigMontage,
+    path_out: Path
+) -> None:
+    # Берём названия каналов из карты
+    chs = montage.ch_names
+
+    df = pd.DataFrame({'channel': chs})
+    df['zone'] = df['channel'].apply(get_zone)
+
+    # Делаем группировочный DataFrame для подсчёта числа вхождений
+    df_zone_cnt = df.groupby('zone', as_index=False).count()
+
+    df_zone_cnt.columns = ['zone', 'n_ch']
+    df_zone_cnt.to_csv(path_out, index=False)
+
+
+
+@click.command(name='MAT Python Opener & Converter, 26-01-17')
 @click.option('-i', required=True, type=str,
     help='Путь до входного файла set. В папке с ним также должен быть одноимённый файл fdt!'
 )
@@ -97,21 +153,20 @@ def save_pos(
 )
 def start(i, o, c):
     try:
-        eeg = read_eeg(
-            Path(i),
-            c
-        )
+        eeg = read_eeg(Path(i), c)
 
-        montage = get_montage(
-            eeg.ch_names,
-            'standard_1005'
-        )
+        if eeg.info['dig'] is not None:
+            print("Используем координаты из файла")
+            montage = eeg.get_montage()
+        else:
+            print("Координат нет, используем стандартный шаблон")
+            montage = get_montage(eeg.ch_names, 'standard_1020')
 
-        csv_name = Path(i).name.split('.')[0] + '.csv'
-        save_pos(
-            montage,
-            Path(o) / csv_name
-        )
+        csv_channels = Path(i).name.split('.')[0] + '_ch.csv'
+        save_channels(montage, Path(o) / csv_channels)
+
+        csv_zones = Path(i).name.split('.')[0] + '_z.csv'
+        save_zones(montage, Path(o) / csv_zones)
 
         print('Конвертация успешно завершена!')
         exit(0)
