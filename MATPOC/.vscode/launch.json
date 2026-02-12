@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "'${file}'",
             "console": "integratedTerminal",
-            "args": "-i ./DATA/Met_003/unified_Met_003.set"
-            // "args": "-i ./DATA/Bmet_001/unified_BMet_001.set"
+            // "args": "-i ../DATA/Met_003/unified_Met_003.set -c 0"
+            "args": "-i ../DATA/Sapr/BMet_007_clean.set -c 0"
         }
     ]
 }

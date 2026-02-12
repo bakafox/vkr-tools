@@ -1,8 +1,11 @@
-from typing import List
 from mne._fiff.meas_info import Info
 from mne.io.eeglab.eeglab import RawEEGLAB
 from mne.channels.montage import DigMontage
+from typing import List
 
+from eeg_positions import get_elec_coords, plot_coords
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from pathlib import Path
 import click
 import numpy as np
@@ -20,8 +23,10 @@ def read_eeg(
     bad_chs = []
 
     # Проверяем совпадение по числу каналов, затем отсеиваем битые
-    if len(inf['chs']) != n_ch:
-        print(f'Кол-во каналов ({len(inf['chs'])}) не соответствует ожидаемому ({n_ch}).')
+    if n_ch <= 0:
+        print(f'Обнаружено {len(inf['chs'])} каналов ЭЭГ.')
+    elif len(inf['chs']) != n_ch:
+        print(f'Кол-во каналов ({len(inf['chs'])}) не соответствует ожидаемому ({n_ch})!')
         exit(-1)
 
     for ch in inf['chs']:
@@ -30,18 +35,18 @@ def read_eeg(
             bad_chs.append(ch['ch_name'])
 
     if bad_chs:
-        print(f'Удаление каналов с некорректными координатами: \n{bad_chs}')
+        print(f'Отброшено каналов с неполными/пустыми координатами: \n{bad_chs}')
         eeg_raw.drop_channels(bad_chs)
     
     return eeg_raw
 
 
-def get_montage(
+def get_std_montage(
     eeg_chs,
-    std_montage_kind: str,
+    coords_system: str,
 ) -> DigMontage:
     # Сперва создаём стандартную карту расположений электродов
-    std_montage = mne.channels.make_standard_montage(std_montage_kind)
+    std_montage = get_elec_coords(system=coords_system, as_mne_montage=True)
 
     # Индексы каналов, которые есть и в карте, и в нашем ЭЭГ
     new_ch_idx = [
@@ -50,14 +55,15 @@ def get_montage(
     print(f'Найдено {len(new_ch_idx)} точек электродов из {len(std_montage.ch_names)} возможных.')
 
     # Теперь на её основе создаём карту электродов, в которой
-    # есть только те электроды, которые изначально были у нас
-    new_ch_names = [std_montage.ch_names[i] for i in new_ch_idx]
-
-    new_electrodes = (
-        std_montage.dig[0:3] # Электроды-точки базисного отсчёта
-        + [std_montage.dig[i+3] for i in new_ch_idx]
+    # есть только те электроды, которые изначально были у нас:
+    new_ch_names = (
+        # ['LPA', 'Nasion', 'RPA'] + # Электроды-точки базисного отсчёта
+        [std_montage.ch_names[i] for i in new_ch_idx]
     )
-
+    new_electrodes = (
+        # std_montage.dig[0:3] + # Электроды-точки базисного отсчёта
+        [std_montage.dig[i+3] for i in new_ch_idx]
+    )
     new_montage = DigMontage(
         ch_names=new_ch_names,
         dig=new_electrodes
@@ -70,11 +76,9 @@ def get_zone(
     ch: str,
 ) -> str:
     # Деление каналов именно на такие зоны взято из файлов Ши Хаонаня!
-    # Также при построении отчасти использовалась эта публикация:
-    # https://www.researchgate.net/publication/380786384_Differences_in_Electroencephalography_Power_Levels_between_Poor_and_Good_Performance_in_Attentional_Tasks
 
-    if ch in ['lpa', 'rpa', 'nasion']:
-        return 'ref' # Референсные каналы типа
+    if ch in ['LPA', 'Nasion', 'RPA']:
+        return 'ref' # Референсные каналы (не используются)
 
     if ch.startswith('F') or ch.startswith('AF'): # F, FC, Fp, FT
         try:
@@ -84,7 +88,7 @@ def get_zone(
         except Exception: # Fz, FCz, FPz, ...
             return 'MF'
     
-    if ch.startswith('C') or ch.startswith('T'): # C, CP, T
+    if ch.startswith('C') or ch.startswith('T') or ch.startswith('M'): # C, CP, T, M
         try:
             cnum = int(ch[-1]) # Осторожно, хрупкий код!
             return 'LT' if (cnum % 2 != 0) else 'RT'
@@ -100,7 +104,47 @@ def get_zone(
         except Exception: # Pz, POz, Oz, ...
             return 'MP'
     
+    print(f'Обнаружен канал с неизвестной зоной деления: {ch}')
     return '???'
+
+
+def plot_channels(montage: DigMontage, zones: List[str]) -> None:
+    df = pd.DataFrame({
+        'label': montage.ch_names,
+        'x': [montage.get_positions()['ch_pos'][ch][0] for ch in montage.ch_names],
+        'y': [montage.get_positions()['ch_pos'][ch][1] for ch in montage.ch_names],
+    })
+
+    for axis in ['x', 'y']: # Хрупкая логика: предполагаем идеальные границы
+        vals = df[axis].values
+        df[axis] = 1.8 * (vals - vals.min()) / (vals.max() - vals.min()) - 0.9
+
+    # Задаём разным зонам разные цвета для удобочитаемости картинки
+    zones_unique = sorted(set(zones))
+    cmap = plt.get_cmap("tab10")
+    zone2color = {zone: cmap(i % 10) for i, zone in enumerate(zones_unique)}
+
+    zs = [montage.get_positions()["ch_pos"][ch][2] for ch in montage.ch_names]
+    sizes = np.array([50 + 1000 * proximity for proximity in zs])
+
+    # https://eeg-positions.readthedocs.io/en/latest/auto_examples/plot_positions.html
+    plot_coords(
+        df,
+        scatter_kwargs={ "s": sizes, "color": [zone2color[z] for z in zones] },
+        text_kwargs={ "ha": "center", "va": "center", "fontsize": 5 }
+    )
+
+    legend = [
+        Line2D(
+            [0],[0], marker="o", color="w", label=f'{zone}: {zones.count(zone)}',
+            markerfacecolor=zone2color[zone], markersize=10
+        ) for zone in zones_unique
+    ]
+
+    plt.legend(handles=legend, loc='upper right', bbox_to_anchor=(1.2, 1.0))
+    plt.title(f"Визуализация каналов (N = {len(montage.ch_names)})")
+
+    plt.show()
 
 
 def save_channels(
@@ -140,27 +184,35 @@ def save_zones(
     df_zone_cnt.to_csv(path_out, index=False)
 
 
-
-@click.command(name='MAT Python Opener & Converter, 26-01-17')
+@click.command(name='MAT Python Opener & Converter, 26-02-12')
 @click.option('-i', required=True, type=str,
     help='Путь до входного файла set. В папке с ним также должен быть одноимённый файл fdt!'
 )
-@click.option('-o', default='./', type=str,
+@click.option('-o', default='./OUTPUT', type=str,
     help='Путь до выходного csv, без имени. Если такой файл уже есть, он будет перезаписан.'
 )
 @click.option('-c', default=48, type=int,
-    help='Ожидаемое количество каналов в файле ЭЭГ.'
+    help='Ожидаемое количество каналов в ЭЭГ (чтобы отключить проверку, передайте 0).'
 )
-def start(i, o, c):
+@click.option('-v', default=True, type=bool,
+    help='Отображать ли визуализацию каналов ЭЭГ? По умолчанию визуализация включена.'
+)
+def start(i, o, c, v):
     try:
         eeg = read_eeg(Path(i), c)
 
         if eeg.info['dig'] is not None:
-            print("Используем координаты из файла")
+            print("Используются координаты электродов из записи ЭЭГ")
             montage = eeg.get_montage()
         else:
-            print("Координат нет, используем стандартный шаблон")
-            montage = get_montage(eeg.ch_names, 'standard_1020')
+            print("Координаты отсутствуют, применяется маска-шаблон")
+            montage = get_std_montage(eeg.ch_names, '1005')
+
+        # montage = get_std_montage(eeg.ch_names, '1005')
+        zones = [get_zone(ch) for ch in montage.ch_names]
+
+        if v:
+            plot_channels(montage, zones)
 
         csv_channels = Path(i).name.split('.')[0] + '_ch.csv'
         save_channels(montage, Path(o) / csv_channels)
