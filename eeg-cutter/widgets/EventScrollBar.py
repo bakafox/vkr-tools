@@ -29,8 +29,8 @@ class ScrollBarModified(QScrollBar):
         self.update()
 
     @pyqtSlot(list)
-    def set_colors(self, colors_selected):
-        self.colors = colors_selected
+    def set_colors(self, new_colors):
+        self.colors = new_colors
 
     def paintEvent(self, event):
         super().paintEvent(event)

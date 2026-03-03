@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'qt_windows/front.ui'
+# Form implementation generated from reading ui file 'front.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -107,7 +107,7 @@ class Ui_MainWindow(object):
         self.fpsLabel.setLocale(QtCore.QLocale(QtCore.QLocale.Russian, QtCore.QLocale.Russia))
         self.fpsLabel.setObjectName("fpsLabel")
         self.amplitudeSpinBox = QtWidgets.QDoubleSpinBox(self.centralWidget_)
-        self.amplitudeSpinBox.setGeometry(QtCore.QRect(910, 720, 91, 21))
+        self.amplitudeSpinBox.setGeometry(QtCore.QRect(920, 720, 81, 21))
         font = QtGui.QFont()
         font.setFamily("Times New Roman")
         font.setPointSize(14)
@@ -347,20 +347,20 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.nextButton.setText(_translate("MainWindow", "След. кадр"))
         self.previousButton.setText(_translate("MainWindow", "Пред. кадр"))
-        self.timeButton.setText(_translate("MainWindow", "Старт/Стоп"))
-        self.fpsLabel.setText(_translate("MainWindow", "Частота\n"
-"кадров\n"
-"видео:"))
-        self.label.setText(_translate("MainWindow", "Пороговая амплитуда ="))
+        self.timeButton.setText(_translate("MainWindow", "Начать"))
+        self.fpsLabel.setText(_translate("MainWindow", "Кадров\n"
+"ЭЭГ\n"
+"в сек.:"))
+        self.label.setText(_translate("MainWindow", "Пороговая амплитуда А:"))
         self.moduleCheckBox.setText(_translate("MainWindow", "По модулю"))
         self.timeEdit.setDisplayFormat(_translate("MainWindow", "hh:mm:ss:zzz"))
         self.eventText.setText(_translate("MainWindow", "Событие: (неизвестно)"))
-        self.setEvent.setText(_translate("MainWindow", "Выбрать"))
+        self.setEvent.setText(_translate("MainWindow", "Выбрать…"))
         self.label_6.setText(_translate("MainWindow", "Зоны Бродманна:"))
         self.saveKnots.setText(_translate("MainWindow", "Сохранить по узлам"))
         self.selectAll.setText(_translate("MainWindow", "Выбрать все"))
         self.disselectAll.setText(_translate("MainWindow", "Убрать все"))
-        self.zoneInfo.setPlaceholderText(_translate("MainWindow", "Выберите зону, чтобы прочитать её описание."))
+        self.zoneInfo.setPlaceholderText(_translate("MainWindow", "Выберите зону, чтобы увидеть её описание."))
         self.hideCheckBox.setText(_translate("MainWindow", "Скрыть иные точки"))
         self.label_15.setText(_translate("MainWindow", "Время:"))
-        self.pointInfo.setPlaceholderText(_translate("MainWindow", "Выберите точку, чтобы посмотреть сведения."))
+        self.pointInfo.setPlaceholderText(_translate("MainWindow", "Выберите точку, чтобы просмотреть её координаты, амплитуду и зону."))

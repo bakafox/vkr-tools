@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
-    <height>365</height>
+    <width>518</width>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,9 +16,9 @@
   <widget class="QPushButton" name="saveButton">
    <property name="geometry">
     <rect>
-     <x>210</x>
-     <y>320</y>
-     <width>111</width>
+     <x>200</x>
+     <y>344</y>
+     <width>150</width>
      <height>31</height>
     </rect>
    </property>
@@ -34,9 +34,9 @@
   <widget class="QPushButton" name="cancelButton">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>320</y>
-     <width>111</width>
+     <x>360</x>
+     <y>344</y>
+     <width>151</width>
      <height>31</height>
     </rect>
    </property>
@@ -52,9 +52,9 @@
   <widget class="QComboBox" name="comboBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>250</x>
      <y>10</y>
-     <width>201</width>
+     <width>261</width>
      <height>31</height>
     </rect>
    </property>
@@ -96,7 +96,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>130</y>
+     <y>170</y>
      <width>301</width>
      <height>31</height>
     </rect>
@@ -113,8 +113,8 @@
   <widget class="QSpinBox" name="windowSpin">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>180</y>
+     <x>120</x>
+     <y>220</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -134,8 +134,8 @@
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>180</y>
+     <x>60</x>
+     <y>220</y>
      <width>55</width>
      <height>31</height>
     </rect>
@@ -153,7 +153,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>155</y>
+     <y>195</y>
      <width>391</width>
      <height>21</height>
     </rect>
@@ -183,8 +183,8 @@
   <widget class="QLabel" name="label_7">
    <property name="geometry">
     <rect>
-     <x>240</x>
-     <y>50</y>
+     <x>50</x>
+     <y>90</y>
      <width>71</width>
      <height>31</height>
     </rect>
@@ -198,31 +198,13 @@
     <string>Конец:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>320</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Вес файла:</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="fileSize">
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>320</y>
-     <width>111</width>
-     <height>31</height>
+     <y>340</y>
+     <width>101</width>
+     <height>41</height>
     </rect>
    </property>
    <property name="font">
@@ -234,12 +216,12 @@
     <string>0 байт</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="saveZonesCheck">
+  <widget class="QCheckBox" name="saveMetadataCheck">
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>80</y>
-     <width>211</width>
+     <y>120</y>
+     <width>471</width>
      <height>41</height>
     </rect>
    </property>
@@ -249,7 +231,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Сохранять номера зон</string>
+    <string>Сохранять информацию о времени и зонах</string>
    </property>
    <property name="checked">
     <bool>true</bool>
@@ -258,8 +240,8 @@
   <widget class="QLabel" name="label_9">
    <property name="geometry">
     <rect>
-     <x>240</x>
-     <y>180</y>
+     <x>270</x>
+     <y>220</y>
      <width>55</width>
      <height>31</height>
     </rect>
@@ -276,8 +258,8 @@
   <widget class="QSpinBox" name="strideSpin">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>180</y>
+     <x>320</x>
+     <y>220</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -298,7 +280,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>260</y>
+     <y>300</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -316,8 +298,8 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>260</y>
-     <width>151</width>
+     <y>300</y>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -333,8 +315,8 @@
   <widget class="QLabel" name="label_11">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>290</y>
+     <x>230</x>
+     <y>300</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -351,8 +333,8 @@
   <widget class="QLabel" name="numFramesTotal">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>290</y>
+     <x>360</x>
+     <y>300</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -366,28 +348,104 @@
     <string>0</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="strideSpin_2">
+  <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>310</x>
+     <x>10</x>
+     <y>280</y>
+     <width>501</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-top: 1px solid palette(text)</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="timeStartSetEnd5Button">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>50</y>
+     <width>86</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Конец - 5</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="timeStartSetEnd10Button">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>50</y>
+     <width>86</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Конец - 10</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="timeStartSetEventButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
      <y>50</y>
      <width>101</width>
      <height>31</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>10000</number>
+   <property name="text">
+    <string>По событию...</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="windowSpin_2">
+  <widget class="QPushButton" name="timeEndSetStart5Button">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>90</y>
+     <width>86</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Начало + 5</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="timeEndSetEventButton">
+   <property name="geometry">
+    <rect>
+     <x>410</x>
+     <y>90</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>По событию...</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="timeEndSetStart10Button">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>90</y>
+     <width>86</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Начало + 10</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="timeStartPlaceholder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>120</x>
@@ -408,20 +466,46 @@
     <number>10000</number>
    </property>
   </widget>
-  <widget class="QLabel" name="label_4">
+  <widget class="QSpinBox" name="timeEndPlaceholder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>90</y>
+     <width>101</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>10000</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_8">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>236</y>
-     <width>431</width>
-     <height>20</height>
+     <y>340</y>
+     <width>81</width>
+     <height>41</height>
     </rect>
    </property>
-   <property name="styleSheet">
-    <string notr="true">border-top: 1px solid palette(text)</string>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
    </property>
    <property name="text">
-    <string/>
+    <string>Вес файла:</string>
    </property>
   </widget>
  </widget>

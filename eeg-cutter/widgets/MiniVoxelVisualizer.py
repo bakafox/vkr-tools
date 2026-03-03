@@ -4,7 +4,9 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
 
-#TODO: мб попытаться унаследовать этот класс от VoxelVisualizer, или более абстрактного класса, от которого будет наследоваться и VoxelVisualizer?
+
+# TODO: мб попытаться унаследовать этот класс от VoxelVisualizer, или
+# более абстрактного класса, от которого будет наследоваться и VoxelVisualizer?
 class MiniVoxelVisualizer(QOpenGLWidget):
     def __init__(self, direction, parent=None):
         super().__init__(parent)
@@ -36,7 +38,7 @@ class MiniVoxelVisualizer(QOpenGLWidget):
         self.unique = sorted(np.unique(self.vertices[:, self.direction]))
         self.maximum = len(self.unique)
 
-        # self.object_rotation = [0, 0]       # Углы поворота по осям X и Y
+        # self.object_rotation = [0, 0]     # Углы поворота по осям X и Y
         self.object_translation = self.object_translations[self.direction]
         self.object_scale = 1.0             # Масштаб объекта
         self.d = 0

@@ -213,7 +213,7 @@ class VoxelVisualizer(QOpenGLWidget):
             miniBrain.update_frame(self.data)
 
         self.update_buffers()
-        self.update()  # Запускаем перерисовку
+        self.update() # Запускаем перерисовку
 
     def initializeGL(self):
         glClearColor(0.0, 0.0, 0.0, 1.0) # Чёрный фон для стирания
@@ -224,7 +224,7 @@ class VoxelVisualizer(QOpenGLWidget):
         glDisable(GL_COLOR_MATERIAL)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
-        glEnable(GL_POINT_SMOOTH)  # Сглаживание точек
+        glEnable(GL_POINT_SMOOTH) # Сглаживание точек
         self.active_zones = [i for i in range(0, 52)]
 
         # Компиляция шейдеров
@@ -259,39 +259,55 @@ class VoxelVisualizer(QOpenGLWidget):
     def find_active_zones_via_amplitude(self, data):
         return np.unique(self.brodmann_texture[data > self.amplitudeVar])
 
-    def get_zones_data(self, _self=True, data=None, vertices=None, include_zones=False, include_alphas=False, ampl=True):
-        if _self:
-            vertices = self.vertices
+    def get_zones_data(
+            self,
+            data,
+            vertices,
+            ampl=True,
+            include_alphas=False,
+            include_zones=False,
+        ):
+        if data is None:
             data = self.data
+        if vertices is None:
+            vertices = self.vertices
 
         if self.vertices is None or self.data is None:
-            if include_zones:
-                return 0, None, None
             return 0, None
 
         if ampl:
             active_zones = self.find_active_zones_via_amplitude(data)
             self.active_zones = active_zones.tolist()
 
-        # print(1)
-
         # if not self.flag_s:
         #     np.save('zones.npy', self.brodmann_texture)
         #     np.save('vertices.npy', self.vertices)
-
         #     self.flag_s = 1
 
-        mask = np.isin(self.brodmann_texture, self.active_zones) # [zone in self.active_zones for zone in self.brodmann_texture]
+        mask = np.isin(self.brodmann_texture, self.active_zones)
 
         if include_zones:
-            vertex_data = np.hstack([self.brodmann_texture[mask, np.newaxis], vertices[mask], data[mask, np.newaxis]]).astype(np.float32)
+            vertex_data = np.hstack([
+                self.brodmann_texture[mask, np.newaxis], # Зона
+                vertices[mask],                          # Координаты
+                data[mask, np.newaxis]                   # Алмплитуда
+            ]).astype(np.float32)
+
         elif include_alphas:
             alphas = np.ones((len(self.vertices)))
             alphas = alphas / 4
             alphas[mask] = 1.0
-            vertex_data = np.hstack([vertices, data[:, np.newaxis], alphas[:, np.newaxis]]).astype(np.float32)
+            vertex_data = np.hstack([
+                vertices,             # Координаты
+                data[:, np.newaxis],  # Амплитуда
+                alphas[:, np.newaxis] # Включения
+            ]).astype(np.float32)
+
         else:
-            vertex_data = np.hstack([vertices[mask], data[mask, np.newaxis]]).astype(np.float32)
+            vertex_data = np.hstack([
+                vertices[mask],        # Координаты
+                data[mask, np.newaxis] # Амплитуда
+            ]).astype(np.float32)
 
         return len(vertices[mask]), vertex_data
 
@@ -305,21 +321,32 @@ class VoxelVisualizer(QOpenGLWidget):
         
         if self.lightAround:
             if self.selected_point != -1:
-                min_alpha = 0.2
+                min_alpha = 0.1
                 alphas[:] = min_alpha
 
                 diff = self.vertices - self.vertices[self.selected_point]
                 distances = np.linalg.norm(diff, axis=1)
                 mask = distances < 0.5
                 dists = distances[mask]
-                alphas[mask] = 1.0 - (distances[mask] - min_alpha) / (dists.max() - min_alpha)
 
-                vertex_data = np.hstack([self.vertices, self.data[:, np.newaxis], alphas[:, np.newaxis]]).astype(np.float32)
+                alphas[mask] = (
+                    1.0 - (distances[mask] - min_alpha) / (dists.max() - min_alpha)
+                )
+                vertex_data = np.hstack([
+                    self.vertices,
+                    self.data[:, np.newaxis],
+                    alphas[:, np.newaxis]
+                ]).astype(np.float32)
         else:
-            _, vertex_data = self.get_zones_data(include_alphas=True)
+            _, vertex_data = self.get_zones_data(
+                None,
+                None,
+                include_alphas=True
+            )
 
         glBindVertexArray(self.vao)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+
         glBufferData(GL_ARRAY_BUFFER, vertex_data.nbytes, vertex_data, GL_DYNAMIC_DRAW)
 
         glBindVertexArray(0)
@@ -522,10 +549,11 @@ class VoxelVisualizer(QOpenGLWidget):
             )
             self.update_buffers()
             self.update()
+
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        abs_max_val = np.float(0.5)
+        abs_max_val = float(0.5)
 
         if event.buttons() == Qt.LeftButton: # Вращение объекта
             delta = event.pos() - self.last_mouse_position
@@ -543,4 +571,5 @@ class VoxelVisualizer(QOpenGLWidget):
         delta = event.angleDelta().y()
         self.object_scale += delta * 0.0002
         self.object_scale = max(0.1, min(10.0, self.object_scale))
+
         self.update()

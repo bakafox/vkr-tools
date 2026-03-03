@@ -1,68 +1,39 @@
-from PyQt5.QtWidgets import QDialog, QMessageBox, QTableWidgetItem, QColorDialog, QLineEdit
-from PyQt5.QtCore import Qt, pyqtSlot, QTime, pyqtSignal
+from PyQt5.QtWidgets import QDialog, QMessageBox, QTableWidgetItem, QColorDialog
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QColor
-from qt_windows.table import Ui_TableDialog
 import numpy as np
 
-# Цвета меток используются self.horizontalScrollBar (ScrollBarModified) и dialog.tableEvent (TableDialog)
-#
-# Словарь событий используют:
-#
-# TableDialog (отображение времени в таблице),
-# ScrollBarModified (проставление временных меток),
-# MainWindow (переход на временную метку)
-
-class TimeEditDelegate(QLineEdit):
-    def __init__(self, current_time, max_time, parent=None):
-        super().__init__(parent)
-
-        self.setInputMask("00:00:00:000")
-        self.setPlaceholderText("00:00:00:000")
-        self.setAlignment(Qt.AlignCenter)
-
-        self.max_time = max_time
-        self.textChanged.connect(self.on_text_changed)
-
-        self.setText(current_time)
-
-    @pyqtSlot(str)
-    def on_text_changed(self, text):
-        try:
-            time = QTime.fromString(text, "hh:mm:ss:zzz")
-            if time.isValid():
-                if self.max_time < text:
-                    text = self.max_time
-                    self.setText(text)
-            else:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setText('Неправильный формат времени')
-                msg.setWindowTitle("Критическая ошибка")
-                msg.exec_()
-
-        except OSError:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
-            msg.setText('Неправильный формат времени')
-            msg.setWindowTitle("Критическая ошибка")
-            msg.exec_()
+from ui.table import Ui_TableDialog
+from timeutil import time_int_to_str, time_str_to_int
+from widgets.TimeEditDelegate import TimeEditDelegate
 
 
-class TableDialog(QDialog, Ui_TableDialog):
-    frame_selected = pyqtSignal(int)
-    colors_selected = pyqtSignal(list)
+class EventsTableDialog(QDialog, Ui_TableDialog):
+    frame_selected = pyqtSignal([int, str])
+
+    colors_updated = pyqtSignal(list)
     dict_updated = pyqtSignal(dict)
     events_updated = pyqtSignal(list)
 
-    def __init__(self, colors, events_array, events_dict, reverse_events_dict, freq, max_len, parent):
+    def __init__(
+            self,
+            colors,
+            events_array,
+            events_dict,
+            reverse_events_dict,
+            freq,
+            max_len,
+            accept_name,
+            parent
+        ):
         super().__init__(parent)
         self.setupUi(self)
-        self.setFixedSize(700, 500)
 
         self.setWindowTitle("Выбор события")
 
         self.addButton.setFocusPolicy(Qt.NoFocus)
         self.acceptButton.setFocusPolicy(Qt.NoFocus)
+        self.acceptButton.setText(accept_name)
         self.deleteButton.setFocusPolicy(Qt.NoFocus)
 
         self.events_array = events_array
@@ -72,15 +43,14 @@ class TableDialog(QDialog, Ui_TableDialog):
         self.colors = colors
 
         self.tableEvent.setRowCount(len(self.events_array))
-
         self.tableEvent.setColumnWidth(0, 120)
         self.tableEvent.setColumnWidth(3, 80)
 
         self.max_len = max_len
-        self.max_time = self.time_int_to_str(self.max_len)
+        self.max_time = time_int_to_str(self.max_len, self.freq)
 
         for i in range(len(self.events_array)):
-            time = self.time_int_to_str(self.events_array[i][0])
+            time = time_int_to_str(self.events_array[i][0], self.freq)
             item_time = TimeEditDelegate(time, self.max_time)
             item_time.editingFinished.connect(self.set_frame)
 
@@ -93,14 +63,17 @@ class TableDialog(QDialog, Ui_TableDialog):
 
             self.tableEvent.setItem(i, 0, item_frame)
             self.tableEvent.setCellWidget(i, 1, item_time)
-            self.tableEvent.setItem(i, 2, QTableWidgetItem(self.reverse_events_dict[self.events_array[i][2]]))
+            self.tableEvent.setItem(
+                i,
+                2,
+                QTableWidgetItem(self.reverse_events_dict[self.events_array[i][2]])
+            )
 
             self.tableEvent.setItem(i, 3, color_item)
 
         self.acceptButton.clicked.connect(self.acceptClicked)
 
         self.tableEvent.cellDoubleClicked.connect(self.set_color_cell)
-
         self.tableEvent.cellChanged.connect(self.set_data)
 
         self.addButton.clicked.connect(self.add_row)
@@ -110,11 +83,11 @@ class TableDialog(QDialog, Ui_TableDialog):
     def acceptClicked(self):
         row = self.tableEvent.currentRow()
         if row != None:
-            item = self.tableEvent.item(row, 0)
+            frame = self.tableEvent.item(row, 0).data(Qt.DisplayRole)
+            timestamp = self.tableEvent.cellWidget(row, 1).text()
 
-            if item:
-                self.frame_selected.emit(item.data(Qt.DisplayRole))
-
+            if frame and timestamp:
+                self.frame_selected.emit(frame, timestamp)
                 self.close()
 
     @pyqtSlot()
@@ -123,13 +96,13 @@ class TableDialog(QDialog, Ui_TableDialog):
         frame_item = self.tableEvent.item(row, 0)
         time_item = self.tableEvent.cellWidget(row, 1)
 
-        frame_int = self.time_str_to_int(time_item.text())
+        frame_int = time_str_to_int(time_item.text(), self.freq)
 
         if time_item and frame_item:
             self.tableEvent.blockSignals(True)
 
             if frame_int in np.array(self.events_array)[:, 0]:
-                time_item.setText(self.time_int_to_str(self.events_array[row][0]))
+                time_item.setText(time_int_to_str(self.events_array[row][0], self.freq))
                 self.tableEvent.blockSignals(False)
                 return
 
@@ -163,7 +136,7 @@ class TableDialog(QDialog, Ui_TableDialog):
                 self.tableEvent.blockSignals(False)
                 return
 
-            time_item.setText(self.time_int_to_str(frame_int))
+            time_item.setText(time_int_to_str(frame_int, self.freq))
 
             self.tableEvent.sortItems(0, Qt.AscendingOrder)
             self.tableEvent.blockSignals(False)
@@ -237,11 +210,11 @@ class TableDialog(QDialog, Ui_TableDialog):
         self.colors.append(QColor(0, 0, 0))
 
         time = self.time_int_to_str(self.events_array[row][0])
-        item_time = TimeEditDelegate(time, self.max_time)
-        item_time.editingFinished.connect(self.set_frame)
 
+        item_time = TimeEditDelegate(time, self.max_time)
         item_frame = QTableWidgetItem()
         item_frame.setData(Qt.DisplayRole, self.events_array[row][0])
+        item_time.editingFinished.connect(self.set_frame)
 
         color_item = QTableWidgetItem()
         color_item.setBackground(self.colors[row])
@@ -249,10 +222,12 @@ class TableDialog(QDialog, Ui_TableDialog):
 
         self.tableEvent.setItem(row, 0, item_frame)
         self.tableEvent.setCellWidget(row, 1, item_time)
-        self.tableEvent.setItem(row, 2, QTableWidgetItem(self.reverse_events_dict[self.events_array[row][2]]))
-
+        self.tableEvent.setItem(
+            row,
+            2,
+            QTableWidgetItem(self.reverse_events_dict[self.events_array[row][2]])
+        )
         self.tableEvent.setItem(row, 3, color_item)
-
         self.tableEvent.sortItems(0, Qt.AscendingOrder)
 
         colors = [[i] for i in self.colors]
@@ -290,18 +265,9 @@ class TableDialog(QDialog, Ui_TableDialog):
                     item.setBackground(color)
                     self.colors[row] = color
 
-    def time_int_to_str(self, time):
-        time = int(time / self.freq * 1000)
-        return str((((time // 1000) // 60) // 60) % 24).zfill(2) + ':' + str(((time // 1000) // 60) % 60).zfill(
-            2) + ':' + str((time // 1000) % 60).zfill(2) + ':' + str(time % 1000).zfill(3)
-
-    def time_str_to_int(self, time):
-        time = QTime.fromString(time, 'hh:mm:ss:zzz')
-        return int((((time.hour() * 24 + time.minute()) * 60 + time.second()) * 1000 + time.msec()) * self.freq / 1000)
-
     def closeEvent(self, event):
         self.dict_updated.emit(self.events_dict)
         self.events_updated.emit(self.events_array)
-        self.colors_selected.emit(self.colors)
+        self.colors_updated.emit(self.colors)
 
         event.accept()

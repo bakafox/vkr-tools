@@ -3,7 +3,7 @@
  <class>TableDialog</class>
  <widget class="QDialog" name="TableDialog">
   <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
+   <enum>Qt::WindowModality::WindowModal</enum>
   </property>
   <property name="geometry">
    <rect>
