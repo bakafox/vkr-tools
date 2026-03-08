@@ -13,7 +13,7 @@ class DoubleSlider(QSlider):
         self._pressed_control = QStyle.SC_None
         self._pressed_pos = None
         self._pressed_value = 0
-        self._interval_color = QColor(100, 150, 255, 100)  # Цвет интервала
+        self._interval_color = QColor(100, 150, 255, 100) # Цвет интервала
 
     def setRange(self, min_value, max_value):
         self._min_value = min_value
@@ -108,7 +108,7 @@ class DoubleSlider(QSlider):
 
         self._pressed_pos = pos
         self._pressed_value = new_value
-        #self.valueChanged.emit(self._min_value, self._max_value)
+        # self.valueChanged.emit(self._min_value, self._max_value)
 
     def mouseReleaseEvent(self, event):
         self._pressed_control = QStyle.SC_None

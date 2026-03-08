@@ -1,13 +1,14 @@
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QListWidgetItem
-from PyQt5.QtCore import QTimer, QTime, Qt, pyqtSlot
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox
+from PyQt5.QtCore import QTimer, QTime, pyqtSlot
 from PyQt5 import QtCore
 import mne
 import numpy as np
 import sys
 
-from eeg_processor import LazyEEGProcessor
-from ui.front import Ui_MainWindow
+from eeglproc import LazyEEGProcessor
 from timeutil import time_int_to_str, time_str_to_int
+from zoneutil import ZONE_NAMES
+from ui.MainWindow import Ui_MainWindow
 from widgets.MiniVoxelVisualizer import MiniVoxelVisualizer
 from widgets.VoxelVisualizer import VoxelVisualizer
 from widgets.EventScrollBar import ScrollBarModified
@@ -26,7 +27,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.events_array = None
         self.events_dict = None
         self.reverse_events_dict = None
-        self.active_zones = []
         self.last_used_window = 1
         self.last_used_stride = 10
 
@@ -80,67 +80,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.setEvent.clicked.connect(self.start_events_table)
 
-        self.listZones.itemClicked.connect(self.show_zone_info)
-        self.selectAll.clicked.connect(self.select_all)
-        self.disselectAll.clicked.connect(self.disselect_all)
-
         self.saveKnots.clicked.connect(self.start_save_knots)
 
-        self.zones = {
-            1: 'Первичная соматосенсорная кора - обработка тактильной информации от тела',
-            2: 'Вторичная соматосенсорная кора - интеграция тактильных ощущений',
-            3: 'Первичная соматосенсорная кора (подзоны 3a и 3b) - обработка проприоцепции и тактильных сигналов',
-            4: 'Первичная моторная кора - контроль произвольных движений',
-            5: 'Ассоциативная соматосенсорная кора - интеграция сенсорной информации',
-            6: 'Премоторная кора и дополнительная моторная область - планирование движений',
-            7: 'Ассоциативная теменная кора - зрительно-пространственная обработка',
-            8: 'Фронтальное глазное поле - контроль движений глаз',
-            9: 'Дорсолатеральная префронтальная кора - рабочая память, исполнительные функции',
-            10: 'Передняя префронтальная кора - сложные когнитивные функции, метапознание',
-            11: 'Орбитофронтальная кора - принятие решений, социальное поведение',
-            12: 'Орбитофронтальная кора (часть) - обработка социальной информации',
-            13: 'Островковая доля (часть) - интероцепция, эмоциональная обработка',
-            14: 'Островковая доля (передняя часть) - обоняние и вкус',
-            15: 'Височная кора (передняя часть) - функции недостаточно изучены',
-            16: 'Височная кора (часть) - функции недостаточно изучены',
-            17: 'Первичная зрительная кора (V1) - обработка базовых зрительных сигналов',
-            18: 'Вторичная зрительная кора (V2) - ранняя зрительная обработка',
-            19: 'Ассоциативная зрительная кора (V3-V5) - сложная зрительная обработка',
-            20: 'Нижняя височная кора - распознавание зрительных объектов',
-            21: 'Средняя височная кора - обработка слуховой и зрительной информации',
-            22: 'Верхняя височная кора (часть зоны Вернике) - понимание речи',
-            23: 'Задняя поясная кора - часть лимбической системы, эмоции и память',
-            24: 'Передняя поясная кора - когнитивный контроль, эмоциональная регуляция',
-            25: 'Субгенуальная кора - регуляция настроения, депрессивные состояния',
-            26: 'Ретросплениальная кора - пространственная память, навигация',
-            27: 'Парагиппокампальная кора (передняя часть) - обонятельная обработка',
-            28: 'Энторинальная кора - интерфейс между гиппокампом и неокортексом',
-            29: 'Ретросплениальная кора (часть) - память и навигация',
-            30: 'Ретросплениальная кора (часть) - память и навигация',
-            31: 'Задняя поясная кора (дорсальная часть) - самореференциальная обработка',
-            32: 'Дорсальная передняя поясная кора - когнитивный контроль, конфликт мониторинга',
-            33: 'Прегенуальная поясная кора - эмоциональная регуляция',
-            34: 'Парагиппокампальная кора (задняя часть) - обонятельная память',
-            35: 'Периринальная кора - память и распознавание объектов',
-            36: 'Парагиппокампальная кора - пространственная память и контекстуальная обработка',
-            37: 'Затылочно-височная кора - распознавание лиц и объектов',
-            38: 'Височный полюс - семантическая память, социальное познание',
-            39: 'Угловая извилина - чтение, математические операции, семантическая обработка',
-            40: 'Надкраевая извилина - фонологическая обработка, рабочая память',
-            41: 'Первичная слуховая кора (A1) - обработка базовых слуховых сигналов',
-            42: 'Вторичная слуховая кора - обработка сложных звуков',
-            43: 'Операкулярная кора - вкусовая обработка',
-            44: 'Зона Брока (передняя часть) - речевое производство',
-            45: 'Зона Брока (задняя часть) - семантическая обработка речи',
-            46: 'Дорсолатеральная префронтальная кора - рабочая память, когнитивная гибкость',
-            47: 'Вентролатеральная префронтальная кора - семантическая обработка, контроль эмоций',
-            48: 'Ретроинсулярная кора - слуховая и вестибулярная обработка',
-            49: 'Парасубкулум - функции недостаточно изучены (есть только у приматов)',
-            50: 'Пресубкулум - функции недостаточно изучены',
-            51: 'Препириформная кора - обонятельная обработка',
-            52: 'Параинсулярная кора - интеграция слуховой и соматосенсорной информации'
-        }
-        self.zones_no = len(self.zones)
+        self.zones = dict(map(lambda zn: (zn, True), ZONE_NAMES))
+        self.zonesLfCheckButton.clicked.connect(lambda: self.toggle_zone('LF'))
+        self.zonesMfCheckButton.clicked.connect(lambda: self.toggle_zone('MF'))
+        self.zonesRfCheckButton.clicked.connect(lambda: self.toggle_zone('RF'))
+        self.zonesLtCheckButton.clicked.connect(lambda: self.toggle_zone('LT'))
+        self.zonesMcCheckButton.clicked.connect(lambda: self.toggle_zone('MC'))
+        self.zonesRtCheckButton.clicked.connect(lambda: self.toggle_zone('RT'))
+        self.zonesLpCheckButton.clicked.connect(lambda: self.toggle_zone('LP'))
+        self.zonesMpCheckButton.clicked.connect(lambda: self.toggle_zone('MP'))
+        self.zonesRpCheckButton.clicked.connect(lambda: self.toggle_zone('RP'))
+        self.zonesSelButton.clicked.connect(lambda: self.toggle_all_zones(True))
+        self.zonesUnselButton.clicked.connect(lambda: self.toggle_all_zones(False))
 
         self.EEGProcessor = None
 
@@ -153,21 +106,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 'Выбранный файл повреждён, имеет неверный формат или не имеет \n'
                 + 'парного .fdt файла (у них должны быть одинаковые названия).'
             )
-            sys.exit(msg.exec_())
+            sys.exit(msg.exec_()) # ОТКЛЮЧИТЬ ДЛЯ ОТЛАДКИ ИНТЕРФЕЙСА
 
     @pyqtSlot()
     def load_file(self):
-        filepath = QFileDialog.getOpenFileName(
+        path_eeg = QFileDialog.getOpenFileName(
             self, 'Выберите файл записи ЭЭГ', '', '*.set'
         )[0]
+        
+        path_zones = 'ANT128_roi.txt'
+        try:
+            _ = open(path_zones, 'r')
+            _.close()
+        except (OSError, FileNotFoundError):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText(
+                'Не удалось найти файл распределения каналов. Убедитесь, что \n'
+                + f'он называется "{path_zones}" и находится в корне программы.'
+            )
+            sys.exit(msg.exec_()) # ОТКЛЮЧИТЬ ДЛЯ ОТЛАДКИ ИНТЕРФЕЙСА
 
-        if filepath != None:
+
+        if path_eeg != None:
             print('\n=== Идёт загрузка файла, подождите... ===\n')
 
             try:
-                self.raw = mne.io.read_raw_eeglab(filepath, preload=True)
+                self.raw = mne.io.read_raw_eeglab(path_eeg, preload=True)
             except TypeError:
-                self.raw = mne.io.read_epochs_eeglab(filepath, preload=True)
+                self.raw = mne.io.read_epochs_eeglab(path_eeg, preload=True)
 
             # Проверка координат в raw.info на NaN
             bad_channels = []
@@ -182,20 +149,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     print(f'{bad_channels}', '\n')
                     self.raw.drop_channels(bad_channels)
 
-                    self.EEGProcessor = LazyEEGProcessor(filepath, bad_channels)
-                
+                    self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, bad_channels)
+
                 else:
                     print(f'\n=== Координаты в этом файле ЭЭГ не были распознаны. Here be dragons! ===\n')
 
-                    self.EEGProcessor = LazyEEGProcessor(filepath, [])
-            
+                    self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, [])
+
             else:
-                self.EEGProcessor = LazyEEGProcessor(filepath, [])
-            
+                self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, [])
+
             print('\n=== Загрузка файла завершена. ===\n')
 
             data, used_vertices = self.EEGProcessor[0]
-            self.brainWidget.brodmann_texture = self.EEGProcessor.brodmann_texture
+            self.brainWidget.zone_texture = self.EEGProcessor.zone_texture
             self.brainWidget.add_data(data, used_vertices)
 
             self.XYScrollBar.setMaximum(
@@ -220,10 +187,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             self.timeEdit.timeChanged.connect(self.set_time)
 
-            self.init_horizontalscrollbar()
+            self.horizontalScrollBar_init()
             self.update_event_text()
 
-    def init_horizontalscrollbar(self):
+    def horizontalScrollBar_init(self):
         self.horizontalScrollBar = ScrollBarModified(self.centralWidget_)
         self.horizontalScrollBar.set_data(
             self.EEGProcessor.get_frames_len() - 1,
@@ -263,7 +230,35 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def fps_change(self):
         self.timer.setInterval(int(1000 / self.fpsSpinBox.value()))
-    
+
+    @pyqtSlot()
+    def toggle_zone(self, zone):
+        self.zones[zone] = not self.zones[zone]
+
+        self.brainWidget.zones = self.zones
+        self.brainWidget.update_buffers()
+        self.brainWidget.update()
+
+    @pyqtSlot()
+    def toggle_all_zones(self, bool):
+
+        for zone in self.zones.keys():
+            self.zones[zone] = bool
+
+        self.zonesLfCheckButton.setChecked(bool)
+        self.zonesMfCheckButton.setChecked(bool)
+        self.zonesRfCheckButton.setChecked(bool)
+        self.zonesLtCheckButton.setChecked(bool)
+        self.zonesMcCheckButton.setChecked(bool)
+        self.zonesRtCheckButton.setChecked(bool)
+        self.zonesLpCheckButton.setChecked(bool)
+        self.zonesMpCheckButton.setChecked(bool)
+        self.zonesRpCheckButton.setChecked(bool)
+
+        self.brainWidget.zones = self.zones
+        self.brainWidget.update_buffers()
+        self.brainWidget.update()
+
     @pyqtSlot()
     def toggle_time(self):
         if self.timer.isActive():
@@ -272,8 +267,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.timer.start()
             self.timeButton.setText('Пауза')
-        self.update_zones_list()
-    
+
     @pyqtSlot()
     def update_time(self):
         time_str = time_int_to_str(self.horizontalScrollBar.value(), self.freq)
@@ -302,14 +296,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.brainWidget.moduleVar = self.moduleCheckBox.isChecked()
         self.brainWidget.update()
         self.brainWidget.update_buffers()
-        self.update_zones_list()
     
     @pyqtSlot()
     def amplitude_change(self):
         self.brainWidget.amplitudeVar = self.amplitudeSpinBox.value()
         self.brainWidget.update()
         self.brainWidget.update_buffers()
-        self.update_zones_list()
     
     @pyqtSlot()
     def hiding_change(self):
@@ -326,83 +318,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def dict_update(self, value):
         self.events_dict = value
         self.reverse_events_dict = {v: k for k, v in self.events_dict.items()}
-    
+
     @pyqtSlot(list)
     def events_update(self, value):
         self.events_array = value
         self.horizontalScrollBar.set_data(self.len_frames, value)
-
-    def zone_change(self, item):
-        self.active_zones = self.brainWidget.active_zones
-
-        if len(item.text()[5::1]) > 2:
-            number = 0
-        else:
-            number = int(item.text()[5::1])
-        
-        if number in self.active_zones:
-            self.active_zones.remove(number)
-        else:
-            self.active_zones.append(number)
-        
-        self.brainWidget.active_zones = self.active_zones
-        self.brainWidget.update_buffers()
-        self.brainWidget.update()
-
-    @pyqtSlot()
-    def select_all(self):
-        self.listZones.blockSignals(True)
-
-        for index in range(self.listZones.count()):
-            if (self.listZones.item(index).flags() & Qt.ItemFlag.ItemIsEnabled):
-                self.listZones.item(index).setCheckState(Qt.Checked)
-        
-        self.listZones.blockSignals(False)
-
-        self.active_zones = [i+1 for i in range(self.zones_no)]
-        self.brainWidget.active_zones = self.active_zones
-        self.brainWidget.update_buffers()
-        self.brainWidget.update()
-    
-    @pyqtSlot()
-    def disselect_all(self):
-        self.listZones.blockSignals(True)
-
-        for index in range(self.listZones.count()):
-            if (self.listZones.item(index).flags() & Qt.ItemFlag.ItemIsEnabled):
-                self.listZones.item(index).setCheckState(Qt.Unchecked)
-
-        self.listZones.blockSignals(False)
-        
-        self.active_zones = []
-        self.brainWidget.active_zones = self.active_zones
-        self.brainWidget.update_buffers()
-        self.brainWidget.update()
-
-    def update_zones_list(self):
-        active_zones = self.brainWidget.active_zones
-        self.listZones.clear()
-        availale_zones = list(map(lambda x: int(x), active_zones))
-        
-        for zone_id in [i+1 for i in range(self.zones_no)]:
-            item = QListWidgetItem(f'Зона {zone_id}')
-            item.setData(1, zone_id)
-
-            if (zone_id in availale_zones):
-                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEnabled)
-                item.setCheckState(Qt.Checked)
-            else:
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
-                item.setCheckState(Qt.Unchecked)
-
-            self.listZones.addItem(item)
-    
-    def show_zone_info(self, item):
-        zone_id = item.data(1)
-        description = self.zones.get(zone_id, 'Информация о зоне отсутствует')
-        info_text = f'=== Зона {zone_id} ===\n\n{description}'
-        
-        self.zoneInfo.setPlainText(info_text)
 
     @pyqtSlot()
     def start_events_table(self):
@@ -426,7 +346,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dialog.events_updated.connect(self.events_update)
 
         dialog.exec_()
-    
+
     @pyqtSlot()
     def start_save_knots(self):
         dialog = SaveKnotsDialog(

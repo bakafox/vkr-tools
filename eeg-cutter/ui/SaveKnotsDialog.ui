@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>saveKnotsDialog</class>
- <widget class="QDialog" name="saveKnotsDialog">
+ <class>SaveKnotsDialog</class>
+ <widget class="QDialog" name="SaveKnotsDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -198,12 +198,12 @@
     <string>Конец:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="fileSize">
+  <widget class="QLabel" name="fileInfo">
    <property name="geometry">
     <rect>
-     <x>90</x>
+     <x>10</x>
      <y>340</y>
-     <width>101</width>
+     <width>181</width>
      <height>41</height>
     </rect>
    </property>
@@ -213,7 +213,7 @@
     </font>
    </property>
    <property name="text">
-    <string>0 байт</string>
+    <string>Вес файла: 0 байт</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="saveMetadataCheck">
@@ -488,24 +488,6 @@
    </property>
    <property name="maximum">
     <number>10000</number>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>340</y>
-     <width>81</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Вес файла:</string>
    </property>
   </widget>
  </widget>

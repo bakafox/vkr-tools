@@ -4,13 +4,13 @@ from PyQt5 import QtCore, QtGui
 import numpy as np
 import csv
 
-from ui.saveKnots import Ui_saveKnotsDialog
+from ui.SaveKnotsDialog import Ui_SaveKnotsDialog
 from timeutil import time_int_to_str, time_str_to_int
 from widgets.TimeEditDelegate import TimeEditDelegate
 from windows.EventsTableDialog import EventsTableDialog
 
 
-class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
+class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
     window_updated = pyqtSignal(int)
     stride_updated = pyqtSignal(int)
 
@@ -59,9 +59,11 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
         self.saveMetadataCheck.stateChanged.connect(self.rewise_file_size)
         self.comboBox.currentIndexChanged.connect(self.rewise_zones_in_use)
 
-        self.all_active_zones = [i+1 for i in range(self.parent().zones_no)]
-        self.original_active_zones = self.brainWidget.active_zones
-        self.brainWidget.active_zones = self.all_active_zones
+        # self.all_zones = list(
+        #     filter(lambda zv: zv, enumerate(self.parent().zones.values()))
+        # )
+        self.all_zones = dict(map(lambda zn: (zn, True), self.parent().zones.keys()))
+        self.original_zones = self.brainWidget.zones
 
         self.timeStartSetEventButton.clicked.connect(
             lambda: self.time_from_events_table(self.timeStart)
@@ -90,9 +92,9 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
     @pyqtSlot()
     def rewise_zones_in_use(self):
         if self.comboBox.currentIndex() == 1:
-            self.brainWidget.active_zones = self.original_active_zones
+            self.brainWidget.zones = self.original_zones
         else:
-            self.brainWidget.active_zones = self.all_active_zones
+            self.brainWidget.zones = self.all_zones
 
         data, used_vertices = self.EEGProcessor[0]
         self.points_num, _ = self.brainWidget.get_zones_data(
@@ -100,7 +102,6 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
             used_vertices,
             ampl=False
         )
-
         print(f'\n=== Число точек: {self.points_num}. ===\n')
 
         self.rewise_file_size()
@@ -149,7 +150,7 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
         file_size = self.precise_csv_size(
             self.points_num,
             int(self.numFramesTotal.text()),
-            19,
+            8,
             2
         )
 
@@ -158,16 +159,10 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
 
         for i in range(1, len(sizes)):
             if file_size < sizes[i]:
-                self.fileSize.setText(
-                    f'{file_size / sizes[i - 1]:.2f} {size_names[i - 1]}'
+                self.fileInfo.setText(
+                    f'Вес файла: {file_size / sizes[i - 1]:.2f} {size_names[i - 1]}'
                 )
                 return
-        self.fileSize.setText(
-            f'{file_size / sizes[4]:.2f} {size_names[4]}'
-        )
-
-    def set_time(self, value, time_widget):
-        time_widget.setText(value)
     
     @pyqtSlot()
     def time_from_another_time(self, widget_target, widget_source, delta_sec):
@@ -190,7 +185,7 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
         )
 
         dialog.frame_selected.connect(
-            lambda _, timestamp: self.set_time(timestamp, time_widget)
+            lambda _, timestamp: time_widget.setText(timestamp)
         )
 
         dialog.colors_updated.connect(self.parent().horizontalScrollBar.set_colors)
@@ -201,11 +196,15 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
 
     @pyqtSlot()
     def cancel(self):
-        self.brainWidget.active_zones = self.original_active_zones
+        self.brainWidget.zones = self.original_zones
         self.close()
     
     @pyqtSlot()
     def apply(self):
+        self.saveButton.setEnabled(False)
+        self.cancelButton.setEnabled(False)
+        self.fileInfo.setText('Сохранение…')
+
         filename, _ = QFileDialog.getSaveFileName(
             None,
             'Сохранение файла CSV',
@@ -240,12 +239,14 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
                         i - int(self.windowSpin.value() / 2) + self.windowSpin.value()
                     ):
                         data, used_vertices = self.EEGProcessor[j]
+
                         _, vertex_data_masked = self.brainWidget.get_zones_data(
                             data,
                             used_vertices,
-                            include_zones=self.saveMetadataCheck.isChecked(),
+                            mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
                             ampl=False
                         )
+
                         _data.append(vertex_data_masked[:, 3])
                     
                     if len(vertex_data_masked) > 0:
@@ -253,8 +254,28 @@ class SaveKnotsDialog(QDialog, Ui_saveKnotsDialog):
 
                         if self.saveMetadataCheck.isChecked():
                             time_col = np.full((vertex_data_masked.shape[0], 1), i)
-                            full_block = np.hstack((time_col, vertex_data_masked))
-                            writer.writerows(full_block)
+                            block_full = np.hstack((time_col, vertex_data_masked))
                         else:
-                            writer.writerows(vertex_data_masked)
+                            block_full = vertex_data_masked
 
+                        # Простое обрезание значений до 3-5 цифр после запятой
+                        # позволяет уменьшить размер выходных данных во много раз!
+                        block_compact = block_full.copy().astype(object)
+
+                        for ci in range(block_full.shape[1]):
+                            try:
+                                block_compact[:, ci] = np.round(
+                                    block_full[:, ci].astype(float), 6
+                                )
+                            except (ValueError, TypeError):
+                                pass
+                        
+                        writer.writerows(block_compact)
+
+            self.fileInfo.setText('Сохранено.')
+        
+        else:
+            self.rewise_file_size()
+
+        self.saveButton.setEnabled(True)
+        self.cancelButton.setEnabled(True)

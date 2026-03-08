@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QTime
 
 
-def time_str_to_int(time_str, freq):
+def time_str_to_int(time_str: str, freq: float) -> int:
     time = QTime.fromString(time_str, 'hh:mm:ss:zzz')
 
     return int(
@@ -9,7 +9,7 @@ def time_str_to_int(time_str, freq):
         * freq / 1000
     )
 
-def time_int_to_str(time_int, freq):
+def time_int_to_str(time_int: int, freq: float) -> str:
     total = int(time_int * 1000 / freq)
 
     msec = total % 1000

@@ -8,7 +8,7 @@ class ScrollBarModified(QScrollBar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setGeometry(QtCore.QRect(10, 650, 1420, 40))
+        self.setGeometry(QtCore.QRect(10, 650, 1260, 40))
         self.setPageStep(1)
         self.setOrientation(Qt.Horizontal)
         self.setObjectName("horizontalScrollBar")

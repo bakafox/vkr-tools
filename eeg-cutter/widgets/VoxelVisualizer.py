@@ -6,6 +6,8 @@ from OpenGL.GLU import *
 import numpy as np
 from numpy.linalg import inv
 
+from zoneutil import get_zone_name, ZONE_NAMES
+
 
 def screen_pos_to_ray(x, y, width, height, view_matrix, projection_matrix):
     # Нормализованные координаты устройства (NDC)
@@ -74,6 +76,7 @@ vertex_shader = """
 layout(location = 0) in vec3 position;
 layout(location = 1) in float value;
 layout(location = 2) in float alpha;
+layout(location = 3) in float zone_id;
 
 uniform mat4 projection;
 uniform mat4 view;
@@ -82,18 +85,18 @@ uniform int moduleVar;
 uniform bool hidePoints;
 uniform float amplitudeVar;
 uniform float heatmap_max;
+uniform bool active_zones[10]; // 0 = unassigned, 1-9 = LF..RP
 
 out vec4 color;
 
 vec4 heatmap(float val, float alp) {
     val = val / heatmap_max;
 
-    if (val < -1)
-    {
+    if (val < -1) {
         val = -1;
     }
 
-    if(val <= 0.0) {
+    if (val <= 0.0) {
         return vec4(0.0, (1+val)*1.0*alp, -val*1.0*alp, 1.0);
     }
     else {
@@ -102,34 +105,30 @@ vec4 heatmap(float val, float alp) {
 }
 
 void main() {
-    if(hidePoints)
-    {
-        bool condition = false;
+    bool zone_active = active_zones[int(zone_id)];
 
-        if(moduleVar == 1) {
+    bool condition = true;
+    if (hidePoints) {
+        if (moduleVar == 1) {
             condition = abs(value) > abs(amplitudeVar);
-        } else {
-            if(amplitudeVar >= 0.0) {
+        }
+        else {
+            if (amplitudeVar >= 0.0) {
                 condition = value >= amplitudeVar;
-            } else {
+            }
+            else {
                 condition = value < amplitudeVar;
             }
         }
-
-        if(condition) {
-            gl_Position = projection * view * model * vec4(position, 1.0);
-            color = heatmap(value, alpha);
-            gl_PointSize = 5.0;
-        } else {
-            gl_Position = vec4(-2.0, -2.0, -2.0, 1.0); // Скрываем точки
-            gl_PointSize = 0.0;
-        }
     }
-    else
-    {
+
+    if (zone_active && condition) {
         gl_Position = projection * view * model * vec4(position, 1.0);
         color = heatmap(value, alpha);
         gl_PointSize = 5.0;
+    } else {
+        gl_Position = vec4(-2.0, -2.0, -2.0, 1.0);
+        gl_PointSize = 0.0;
     }
 }
 """
@@ -150,12 +149,11 @@ class VoxelVisualizer(QOpenGLWidget):
     def __init__(self, YZBrain, XZBrain, XYBrain, pointInfo, parent=None):
         super().__init__(parent)
         self.points = None
-        self.vertices = None                # Координаты вокселей
-        self.data = None                    # Значения активности вокселей
-        self.object_rotation = [0, 0]       # Углы поворота по осям X и Y
-        self.object_translation = [0, 0]    # Смещение по осям X и Y
-        self.object_scale = 1.0             # Масштаб объекта
-        self.d = 0
+        self.vertices = None             # Координаты вокселей
+        self.data = None                 # Значения активности вокселей
+        self.object_rotation = [0, 0]    # Углы поворота по осям X и Y
+        self.object_translation = [0, 0] # Смещение по осям X и Y
+        self.object_scale = 1.0          # Масштаб объекта
         self.last_mouse_position = None
 
         self.flag_s = 0
@@ -182,19 +180,18 @@ class VoxelVisualizer(QOpenGLWidget):
         self.view = np.eye(4, dtype=np.float32)
         self.model = np.eye(4, dtype=np.float32)
 
-        self.brodmann_texture = None
-        self.debug_ray = None # ОТЛАДКА
-        self.selected_point = -1  # Индекс выбранной точки
+        self.zone_texture = None
+        self.debug_ray = None    # ОТЛАДКА
+        self.selected_point = -1 # Индекс выбранной точки
     
     def add_data(self, data, vertices):
         self.data = data
         self.vertices = vertices
         self.colors = np.array((len(self.vertices), 4))
 
-        self.object_rotation = [90, 0]      # Углы поворота по осям X и Y
-        self.object_translation = [0, 0]    # Смещение по осям X и Y
-        self.object_scale = 0.1             # Масштаб объекта
-        self.d = 0
+        self.object_rotation = [90, 0]   # Углы поворота по осям X и Y
+        self.object_translation = [0, 0] # Смещение по осям X и Y
+        self.object_scale = 0.1          # Масштаб объекта
         self.last_mouse_position = None
 
         self.moduleVar = 1
@@ -213,7 +210,7 @@ class VoxelVisualizer(QOpenGLWidget):
             miniBrain.update_frame(self.data)
 
         self.update_buffers()
-        self.update() # Запускаем перерисовку
+        self.update()
 
     def initializeGL(self):
         glClearColor(0.0, 0.0, 0.0, 1.0) # Чёрный фон для стирания
@@ -225,7 +222,8 @@ class VoxelVisualizer(QOpenGLWidget):
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
         glEnable(GL_POINT_SMOOTH) # Сглаживание точек
-        self.active_zones = [i for i in range(0, 52)]
+
+        self.zones = {name: True for name in ZONE_NAMES}
 
         # Компиляция шейдеров
         self.shader_program = compileProgram(
@@ -240,32 +238,29 @@ class VoxelVisualizer(QOpenGLWidget):
         self.vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
 
-        #self.vbo_alphas = glGenBuffers(1)
-        #glBindBuffer(GL_ARRAY_BUFFER, self.vbo_alphas)
+        # self.vbo_alphas = glGenBuffers(1)
+        # glBindBuffer(GL_ARRAY_BUFFER, self.vbo_alphas)
 
         # Настройка атрибутов
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(1)
-        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(16))
-        glEnableVertexAttribArray(2)
-
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0) # positions
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(1) # values
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(16))
+        glEnableVertexAttribArray(2) # alphas
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(20))
+        glEnableVertexAttribArray(3) # zone_id
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
         self.update_buffers()
-
-    def find_active_zones_via_amplitude(self, data):
-        return np.unique(self.brodmann_texture[data > self.amplitudeVar])
 
     def get_zones_data(
             self,
             data,
             vertices,
             ampl=True,
-            include_alphas=False,
-            include_zones=False,
+            mode='normal',
         ):
         if data is None:
             data = self.data
@@ -276,31 +271,34 @@ class VoxelVisualizer(QOpenGLWidget):
             return 0, None
 
         if ampl:
-            active_zones = self.find_active_zones_via_amplitude(data)
-            self.active_zones = active_zones.tolist()
+            active_idx = np.unique(self.zone_texture[data > self.amplitudeVar])
+            self.zones = {name: (i+1) in active_idx for i, name in enumerate(ZONE_NAMES)}
 
         # if not self.flag_s:
-        #     np.save('zones.npy', self.brodmann_texture)
+        #     np.save('zones.npy', self.zone_texture)
         #     np.save('vertices.npy', self.vertices)
         #     self.flag_s = 1
 
-        mask = np.isin(self.brodmann_texture, self.active_zones)
+        active_idx = [i+1 for i, name in enumerate(ZONE_NAMES) if self.zones[name]]
+        mask = np.isin(self.zone_texture, active_idx)
 
-        if include_zones:
+        if mode == 'full':
             vertex_data = np.hstack([
-                self.brodmann_texture[mask, np.newaxis], # Зона
-                vertices[mask],                          # Координаты
-                data[mask, np.newaxis]                   # Алмплитуда
+                self.zone_texture[mask, np.newaxis], # ID зоны
+                vertices[mask],                      # Координаты
+                data[mask, np.newaxis]               # Алмплитуда
             ]).astype(np.float32)
 
-        elif include_alphas:
+        elif mode == 'render':
             alphas = np.ones((len(self.vertices)))
-            alphas = alphas / 4
+            alphas = alphas / 5 # Все точки вне порога будут иметь непрозрачность 20%
             alphas[mask] = 1.0
+
             vertex_data = np.hstack([
-                vertices,             # Координаты
-                data[:, np.newaxis],  # Амплитуда
-                alphas[:, np.newaxis] # Включения
+                vertices,                        # Координаты
+                data[:, np.newaxis],             # Амплитуда
+                alphas[:, np.newaxis],           # Включения
+                self.zone_texture[:, np.newaxis] # ID зоны
             ]).astype(np.float32)
 
         else:
@@ -315,34 +313,12 @@ class VoxelVisualizer(QOpenGLWidget):
         if self.vertices is None or self.data is None:
             return
 
-        self.lightAround = False
-
-        alphas = np.ones((len(self.vertices)))
-        
-        if self.lightAround:
-            if self.selected_point != -1:
-                min_alpha = 0.1
-                alphas[:] = min_alpha
-
-                diff = self.vertices - self.vertices[self.selected_point]
-                distances = np.linalg.norm(diff, axis=1)
-                mask = distances < 0.5
-                dists = distances[mask]
-
-                alphas[mask] = (
-                    1.0 - (distances[mask] - min_alpha) / (dists.max() - min_alpha)
-                )
-                vertex_data = np.hstack([
-                    self.vertices,
-                    self.data[:, np.newaxis],
-                    alphas[:, np.newaxis]
-                ]).astype(np.float32)
-        else:
-            _, vertex_data = self.get_zones_data(
-                None,
-                None,
-                include_alphas=True
-            )
+        _, vertex_data = self.get_zones_data(
+            None,
+            None,
+            mode='render',
+            ampl=False
+        )
 
         glBindVertexArray(self.vao)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
@@ -358,9 +334,10 @@ class VoxelVisualizer(QOpenGLWidget):
             point = self.vertices[self.selected_point]
 
             self.pointInfo.setText(
-                f'X:\t{point[0]:6.2f} \nY:\t{point[1]:6.2f} \nZ:\t{point[2]:6.2f} \n'
-                + f'Амплитуда:\t{self.data[self.selected_point]:7.4f} мВ \n'
-                + f'Зона расположения:\t{self.brodmann_texture[self.selected_point]}'
+                f'=== Информация о точке № {self.selected_point} ===\n'
+                + f'X: {point[0]:7.4f} \tY: {point[1]:7.4f} \tZ: {point[2]:7.4f}\n'
+                + f'Область: {get_zone_name(self.zone_texture[self.selected_point])}\n'
+                + f'Амплитуда: {self.data[self.selected_point]:7.4f} мВ'
             )
         else:
             self.pointInfo.setText('')
@@ -390,14 +367,40 @@ class VoxelVisualizer(QOpenGLWidget):
         glUseProgram(self.shader_program) # Применяем шейдер
         self.update_matrices() # Обновление матриц
 
-        # Передача униформ
-        glUniformMatrix4fv(glGetUniformLocation(self.shader_program, "projection"), 1, GL_FALSE, self.projection)
-        glUniformMatrix4fv(glGetUniformLocation(self.shader_program, "view"), 1, GL_FALSE, self.view)
-        glUniformMatrix4fv(glGetUniformLocation(self.shader_program, "model"), 1, GL_FALSE, self.model)
-        glUniform1i(glGetUniformLocation(self.shader_program, "moduleVar"), self.moduleVar)
-        glUniform1i(glGetUniformLocation(self.shader_program, "hidePoints"), self.hidePoints)
-        glUniform1f(glGetUniformLocation(self.shader_program, "amplitudeVar"), self.amplitudeVar)
-        glUniform1f(glGetUniformLocation(self.shader_program, "heatmap_max"), self.heatmap_max)
+        zones_list = [True] + [self.zones[name] for name in ZONE_NAMES]
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.shader_program, "projection"),
+            1, GL_FALSE, self.projection
+        )
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.shader_program, "view"),
+            1, GL_FALSE, self.view
+        )
+        glUniformMatrix4fv(
+            glGetUniformLocation(self.shader_program, "model"),
+            1, GL_FALSE, self.model
+        )
+        glUniform1i(
+            glGetUniformLocation(self.shader_program, "moduleVar"),
+            self.moduleVar
+        )
+        glUniform1i(
+            glGetUniformLocation(self.shader_program, "hidePoints"),
+            self.hidePoints
+        )
+        glUniform1iv(
+            glGetUniformLocation(self.shader_program, "active_zones"),
+            10, np.array(zones_list, dtype=np.int32)
+        )
+        glUniform1f(
+            glGetUniformLocation(self.shader_program, "amplitudeVar"),
+            self.amplitudeVar
+        )
+        glUniform1f(
+            glGetUniformLocation(self.shader_program, "heatmap_max"),
+            self.heatmap_max
+        )
 
         # Отрисовка
         glBindVertexArray(self.vao)

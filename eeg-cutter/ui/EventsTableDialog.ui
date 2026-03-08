@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>TableDialog</class>
- <widget class="QDialog" name="TableDialog">
+ <class>EventsTableDialog</class>
+ <widget class="QDialog" name="EventsTableDialog">
   <property name="windowModality">
    <enum>Qt::WindowModality::WindowModal</enum>
   </property>
@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
+    <width>620</width>
     <height>500</height>
    </rect>
   </property>
@@ -31,7 +31,7 @@
      <x>10</x>
      <y>10</y>
      <width>681</width>
-     <height>431</height>
+     <height>441</height>
     </rect>
    </property>
    <property name="font">
@@ -47,7 +47,7 @@
    </attribute>
    <column>
     <property name="text">
-     <string>Фрейм</string>
+     <string>Кадр</string>
     </property>
    </column>
    <column>
@@ -69,58 +69,45 @@
   <widget class="QPushButton" name="acceptButton">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>450</y>
-     <width>321</width>
-     <height>41</height>
+     <x>310</x>
+     <y>460</y>
+     <width>301</width>
+     <height>31</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <family>Times New Roman</family>
-     <pointsize>12</pointsize>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
-    <string>Перейти на выбранное событие</string>
+    <string>Перейти к выбранному событию</string>
    </property>
   </widget>
   <widget class="QPushButton" name="addButton">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>450</y>
-     <width>41</width>
-     <height>41</height>
+     <y>460</y>
+     <width>101</width>
+     <height>31</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <family>Times New Roman</family>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
    <property name="text">
-    <string>+</string>
+    <string>Добавить</string>
    </property>
   </widget>
   <widget class="QPushButton" name="deleteButton">
    <property name="geometry">
     <rect>
-     <x>60</x>
-     <y>450</y>
-     <width>41</width>
-     <height>41</height>
+     <x>120</x>
+     <y>460</y>
+     <width>101</width>
+     <height>31</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <family>Times New Roman</family>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
    <property name="text">
-    <string>-</string>
+    <string>Удалить</string>
    </property>
   </widget>
  </widget>

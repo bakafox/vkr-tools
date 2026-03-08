@@ -3,12 +3,12 @@ from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QColor
 import numpy as np
 
-from ui.table import Ui_TableDialog
+from ui.EventsTableDialog import Ui_EventsTableDialog
 from timeutil import time_int_to_str, time_str_to_int
 from widgets.TimeEditDelegate import TimeEditDelegate
 
 
-class EventsTableDialog(QDialog, Ui_TableDialog):
+class EventsTableDialog(QDialog, Ui_EventsTableDialog):
     frame_selected = pyqtSignal([int, str])
 
     colors_updated = pyqtSignal(list)
@@ -34,6 +34,7 @@ class EventsTableDialog(QDialog, Ui_TableDialog):
         self.addButton.setFocusPolicy(Qt.NoFocus)
         self.acceptButton.setFocusPolicy(Qt.NoFocus)
         self.acceptButton.setText(accept_name)
+        self.acceptButton.setEnabled(False)
         self.deleteButton.setFocusPolicy(Qt.NoFocus)
 
         self.events_array = events_array
@@ -71,8 +72,11 @@ class EventsTableDialog(QDialog, Ui_TableDialog):
 
             self.tableEvent.setItem(i, 3, color_item)
 
-        self.acceptButton.clicked.connect(self.acceptClicked)
+        self.acceptButton.clicked.connect(self.apply)
 
+        self.tableEvent.cellClicked.connect(
+            lambda: self.acceptButton.setEnabled(True)
+        )
         self.tableEvent.cellDoubleClicked.connect(self.set_color_cell)
         self.tableEvent.cellChanged.connect(self.set_data)
 
@@ -80,7 +84,7 @@ class EventsTableDialog(QDialog, Ui_TableDialog):
         self.deleteButton.clicked.connect(self.delete_row)
 
     @pyqtSlot()
-    def acceptClicked(self):
+    def apply(self):
         row = self.tableEvent.currentRow()
         if row != None:
             frame = self.tableEvent.item(row, 0).data(Qt.DisplayRole)
