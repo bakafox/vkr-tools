@@ -12,13 +12,16 @@ class LazyEEGProcessor:
             path_eeg,
             path_zones,
             bad_channels,
-            output_dir='~cache_',
+            use_cache,
+            cache_dir='~cache_',
             safety_factor=0.5,
         ):
         self.filepath = Path(path_eeg)
         self.bad_channels = bad_channels
-        self.output_dir = Path(output_dir + self.filepath.stem)
+        self.use_cache = use_cache
+        self.cache_dir = Path(cache_dir + self.filepath.stem)
         self.safety_factor = safety_factor
+
         self.raw = None
         self.fwd = None
         self.inverse_operator = None
@@ -102,6 +105,7 @@ class LazyEEGProcessor:
         # (некоторые каналы могут отсутствовать во взятых заранее вершинах)
         fwd_picks = []
         valid_ch_names = []
+
         for ch in ch_names:
             if ch in row_name_set:
                 fwd_picks.append(row_name_set[ch])
@@ -138,7 +142,7 @@ class LazyEEGProcessor:
         print(f'\n=== Оптимальный размер чанков: {self.chunk_size} кадров. ===\n')
 
     def _get_chunk_filename(self, start: int, stop: int) -> Path:
-        return self.output_dir / f'chunk_{start}_{stop}.npy'
+        return self.cache_dir / f'chunk_{start}_{stop}.npy'
 
     def _process_chunk(self, start: int, stop: int) -> mne.SourceEstimate:
         # Применяем обратный оператор к отрезку сырых данных методом sLORETA.
@@ -165,21 +169,25 @@ class LazyEEGProcessor:
 
             filename = self._get_chunk_filename(start, stop)
 
-            # Если чанк уже есть в кэше, грузим оттуда
-            if filename.exists():
-                print(f'\n=== Cache-Hit чанка {start} -- {stop}. ===\n')
-                return np.load(filename.absolute().as_posix())
+            if self.use_cache:
+                # Если чанк уже есть в кэше, грузим оттуда
+                if filename.exists():
+                    print(f'\n=== Cache-Hit чанка {start} -- {stop}. ===\n')
+                    return np.load(filename.absolute().as_posix())
 
-            # Если нет, обрабатываем и сохраняем новый чанк
-            self.stc = self._process_chunk(start, stop)
-            print(f'\n=== Кэширован новый чанк {start} -- {stop}. ===\n')
+                # Если нет, обрабатываем и сохраняем новый чанк
+                self.stc = self._process_chunk(start, stop)
 
-            # TODO: у меня на компе работает медленно, потестить,
-            # мб заменить на другой способ сохранения чанков
-            filename.parent.mkdir(parents=True, exist_ok=True)
-            np.save(filename.absolute().as_posix(), self.stc.data)
+                print(f'\n=== Кэширован новый чанк {start} -- {stop}. ===\n')
+                # TODO: у меня на компе работает медленно, потестить,
+                # мб заменить на другой способ сохранения чанков
+                filename.parent.mkdir(parents=True, exist_ok=True)
+                np.save(filename.absolute().as_posix(), self.stc.data)
+                self.current_chunk_id = chunk_id
 
-            self.current_chunk_id = chunk_id
+            else:
+                self.stc = self._process_chunk(start, stop)
+                self.current_chunk_id = chunk_id
 
     def _align_vertices(self, vertices, precision: int = 10**5):
         # Форвард-модель может содержать несколько источников с очень
@@ -195,12 +203,12 @@ class LazyEEGProcessor:
         return np.ceil(self.raw.n_times / self.chunk_size).astype(int)
 
     def __getitem__(self, frame_id: int) -> tuple[np.typing.NDArray, list]:
-        # Получение чанка по индексу с lazy-вычислениями
+        # Получение кадра и соответствующих ему вершин по id
         self._check_new_chunk(frame_id)
-        return self.stc.data[
-            self.aligned_indices,
-            frame_id % self.chunk_size
-        ], self.aligned_vertices
+        return (
+            self.stc.data[self.aligned_indices, frame_id % self.chunk_size],
+            self.aligned_vertices
+        )
 
     def get_frames_len(self) -> int:
         return self.raw.n_times

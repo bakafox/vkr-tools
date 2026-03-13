@@ -17,18 +17,22 @@ from windows.SaveKnotsDialog import SaveKnotsDialog
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, progname):
+    def __init__(self, progname, use_cache):
         super().__init__()
         self.setupUi(self)
 
         self.setWindowTitle(progname)
+        self.use_cache = use_cache
 
         self.freq = None
         self.events_array = None
         self.events_dict = None
         self.reverse_events_dict = None
+
+        self.last_used_mode = 'frame'
         self.last_used_window = 1
         self.last_used_stride = 10
+        self.last_used_criteria = 'max'
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_parameters)
@@ -149,15 +153,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     print(f'{bad_channels}', '\n')
                     self.raw.drop_channels(bad_channels)
 
-                    self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, bad_channels)
+                    self.EEGProcessor = LazyEEGProcessor(
+                        path_eeg,
+                        path_zones,
+                        bad_channels,
+                        self.use_cache
+                    )
 
                 else:
-                    print(f'\n=== Координаты в этом файле ЭЭГ не были распознаны. Here be dragons! ===\n')
+                    print(f'\n=== Координаты в ЭЭГ не были распознаны. Here be dragons! ===\n')
 
-                    self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, [])
+                    self.EEGProcessor = LazyEEGProcessor(
+                        path_eeg,
+                        path_zones,
+                        [],
+                        self.use_cache
+                    )
 
             else:
-                self.EEGProcessor = LazyEEGProcessor(path_eeg, path_zones, [])
+                self.EEGProcessor = LazyEEGProcessor(
+                    path_eeg,
+                    path_zones,
+                    [],
+                    self.use_cache
+                )
 
             print('\n=== Загрузка файла завершена. ===\n')
 
@@ -355,16 +374,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.freq,
             self.brainWidget,
             self.EEGProcessor,
+            self.last_used_mode,
             self.last_used_window,
             self.last_used_stride,
+            self.last_used_criteria,
             self
         )
 
+        dialog.mode_updated.connect(
+            lambda mode: setattr(self, 'last_used_mode', mode)
+        )
         dialog.window_updated.connect(
             lambda window: setattr(self, 'last_used_window', window)
         )
         dialog.stride_updated.connect(
             lambda stride: setattr(self, 'last_used_stride', stride)
+        )
+        dialog.criteria_updated.connect(
+            lambda criteria: setattr(self, 'last_used_criteria', criteria)
         )
 
         dialog.exec_()

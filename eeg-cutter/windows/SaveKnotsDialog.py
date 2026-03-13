@@ -11,8 +11,10 @@ from windows.EventsTableDialog import EventsTableDialog
 
 
 class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
+    mode_updated = pyqtSignal(str)
     window_updated = pyqtSignal(int)
     stride_updated = pyqtSignal(int)
+    criteria_updated = pyqtSignal(str)
 
     def __init__(
             self,
@@ -21,8 +23,10 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
             freq,
             brainWidget,
             EEGProcessor,
+            init_mode,
             init_window,
             init_stride,
+            init_criteria,
             parent
         ):
         super().__init__(parent)
@@ -33,17 +37,20 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.freq = freq
         self.brainWidget = brainWidget
         self.EEGProcessor = EEGProcessor
+        self.save_mode = init_mode
+        self.frame_criteria = init_criteria
+
+        self.all_zones = dict(map(lambda zn: (zn, True), self.parent().zones.keys()))
+        self.original_zones = self.brainWidget.zones
 
         font = QtGui.QFont()
         font.setPointSize(12)
-
         self.timeStart = TimeEditDelegate(time_now, time_max, self)
         self.timeStart.setGeometry(QtCore.QRect(120, 50, 100, 30))
         self.timeStart.setFont(font)
         self.timeStart.setAlignment(QtCore.Qt.AlignCenter)
         self.timeStart.setObjectName('timeStart')
         self.timeStart.textChanged.connect(self.rewise_frames_num)
-
         self.timeEnd = TimeEditDelegate(time_max, time_max, self)
         self.timeEnd.setGeometry(QtCore.QRect(120, 90, 100, 30))
         self.timeEnd.setFont(font)
@@ -51,37 +58,48 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.timeEnd.setObjectName('timeEnd')
         self.timeEnd.textChanged.connect(self.rewise_frames_num)
 
+        self.timeStartSetEventButton.clicked.connect(
+            lambda: self.set_time_from_events_table(self.timeStart)
+        )
+        self.timeStartSetEnd5Button.clicked.connect(
+            lambda: self.set_time_from_another_time(self.timeStart, self.timeEnd, -5)
+        )
+        self.timeStartSetEnd10Button.clicked.connect(
+            lambda: self.set_time_from_another_time(self.timeStart, self.timeEnd, -10)
+        )
+        self.timeEndSetEventButton.clicked.connect(
+            lambda: self.set_time_from_events_table(self.timeEnd)
+        )
+        self.timeEndSetStart5Button.clicked.connect(
+            lambda: self.set_time_from_another_time(self.timeEnd, self.timeStart, +5)
+        )
+        self.timeEndSetStart10Button.clicked.connect(
+            lambda: self.set_time_from_another_time(self.timeEnd, self.timeStart, +10)
+        )
+
+        self.saveMetadataCheck.stateChanged.connect(self.rewise_file_size)
+        self.comboBox.currentIndexChanged.connect(self.rewise_zones_in_use)
+
+        self.optionsContainer.setCurrentIndex(1 if self.save_mode == 'frame' else 0)
+        self.optionsFrameRadio.toggled.connect(
+            lambda c: self.set_save_mode('frame') if c else None
+        )
+        self.optionsFullRadio.toggled.connect(
+            lambda c: self.set_save_mode('full') if c else None
+        )
+
         self.windowSpin.setValue(init_window)
         self.windowSpin.valueChanged.connect(self.rewise_frames_num)
         self.strideSpin.setValue(init_stride)
         self.strideSpin.valueChanged.connect(self.rewise_frames_num)
 
-        self.saveMetadataCheck.stateChanged.connect(self.rewise_file_size)
-        self.comboBox.currentIndexChanged.connect(self.rewise_zones_in_use)
-
-        # self.all_zones = list(
-        #     filter(lambda zv: zv, enumerate(self.parent().zones.values()))
-        # )
-        self.all_zones = dict(map(lambda zn: (zn, True), self.parent().zones.keys()))
-        self.original_zones = self.brainWidget.zones
-
-        self.timeStartSetEventButton.clicked.connect(
-            lambda: self.time_from_events_table(self.timeStart)
+        self.frameMaxRadio.setChecked(self.frame_criteria == 'max')
+        self.frameMaxRadio.toggled.connect(
+            lambda c: self.set_frame_criteria('max') if c else None
         )
-        self.timeStartSetEnd5Button.clicked.connect(
-            lambda: self.time_from_another_time(self.timeStart, self.timeEnd, -5)
-        )
-        self.timeStartSetEnd10Button.clicked.connect(
-            lambda: self.time_from_another_time(self.timeStart, self.timeEnd, -10)
-        )
-        self.timeEndSetEventButton.clicked.connect(
-            lambda: self.time_from_events_table(self.timeEnd)
-        )
-        self.timeEndSetStart5Button.clicked.connect(
-            lambda: self.time_from_another_time(self.timeEnd, self.timeStart, +5)
-        )
-        self.timeEndSetStart10Button.clicked.connect(
-            lambda: self.time_from_another_time(self.timeEnd, self.timeStart, +10)
+        self.frameMinRadio.setChecked(self.frame_criteria == 'min')
+        self.frameMinRadio.toggled.connect(
+            lambda c: self.set_frame_criteria('min') if c else None
         )
 
         self.cancelButton.clicked.connect(self.cancel)
@@ -121,13 +139,10 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         # Кадры ПОСЛЕ прохода шагающих окном
         num_frames = max(
             0,
-            int(
-                (num_frames - 2 * int(self.windowSpin.value() / 2))
-                / self.strideSpin.value()
-            )
+            int((num_frames - 2 * int(self.windowSpin.value() / 2))
+                / self.strideSpin.value())
         )
 
-        # Сохраняем размеры окна и шага, потому что почему бы и нет
         self.window_updated.emit(int(self.windowSpin.value()))
         self.stride_updated.emit(int(self.strideSpin.value()))
 
@@ -149,7 +164,7 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
     def rewise_file_size(self):
         file_size = self.precise_csv_size(
             self.points_num,
-            int(self.numFramesTotal.text()),
+            1 if self.optionsContainer.currentIndex() == 1 else int(self.numFramesTotal.text()),
             8,
             2
         )
@@ -163,16 +178,28 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
                     f'Вес файла: {file_size / sizes[i - 1]:.2f} {size_names[i - 1]}'
                 )
                 return
-    
+
+    @pyqtSlot(str)
+    def set_frame_criteria(self, new_criteria):
+        self.frame_criteria = new_criteria
+        self.criteria_updated.emit(new_criteria)
+
+    @pyqtSlot(str)
+    def set_save_mode(self, new_mode):
+        self.save_mode = new_mode
+        self.optionsContainer.setCurrentIndex(1 if new_mode == 'frame' else 0)
+        self.mode_updated.emit(new_mode)
+        self.rewise_file_size()
+
     @pyqtSlot()
-    def time_from_another_time(self, widget_target, widget_source, delta_sec):
+    def set_time_from_another_time(self, widget_target, widget_source, delta_sec):
         time = (
             time_str_to_int(widget_source.text(), self.freq) + delta_sec * self.freq
         )
         widget_target.setText(time_int_to_str(time, self.freq))
 
     @pyqtSlot()
-    def time_from_events_table(self, time_widget):
+    def set_time_from_events_table(self, time_widget):
         dialog = EventsTableDialog(
             self.parent().horizontalScrollBar.colors,
             self.parent().events_array,
@@ -198,7 +225,116 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
     def cancel(self):
         self.brainWidget.zones = self.original_zones
         self.close()
-    
+
+    def save_as_full(self, filename, fields):
+        with open(f'{filename}.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(fields)
+
+            for i in range(
+                time_str_to_int(self.timeStart.text(), self.freq)
+                    + int(self.windowSpin.value() / 2),
+                time_str_to_int(self.timeEnd.text(), self.freq)
+                    - int(self.windowSpin.value() / 2),
+                self.strideSpin.value()
+            ):
+                _data = []
+                data_with_zone = []
+
+                for j in range(
+                    i - int(self.windowSpin.value() / 2),
+                    i - int(self.windowSpin.value() / 2) + self.windowSpin.value()
+                ):
+                    amplitudes, used_vertices = self.EEGProcessor[j]
+
+                    _, data_with_zone = self.brainWidget.get_zones_data(
+                        amplitudes,
+                        used_vertices,
+                        mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
+                        ampl=False
+                    )
+
+                    _data.append(data_with_zone[:, 3])
+                
+                if len(data_with_zone) > 0:
+                    data_with_zone[:, 3] = np.average(_data, 0)
+
+                    if self.saveMetadataCheck.isChecked():
+                        time_col = np.full((data_with_zone.shape[0], 1), i)
+                        block_full = np.hstack((time_col, data_with_zone))
+                    else:
+                        block_full = data_with_zone
+
+                    # Простое обрезание значений до 3-5 цифр после запятой
+                    # позволяет уменьшить размер выходных данных во много раз!
+                    block_compact = block_full.copy().astype(object)
+
+                    for ci in range(block_full.shape[1]):
+                        try:
+                            block_compact[:, ci] = np.round(
+                                block_full[:, ci].astype(float), 6
+                            )
+                        except (ValueError, TypeError):
+                            pass
+                    
+                    writer.writerows(block_compact)
+
+    def save_as_frame(self, filename, fields):
+        with open(f'{filename}.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(fields)
+
+            found_criteria = -1.0 if self.frame_criteria == 'max' else +1.0
+            found_data = None
+            found_timestamp = 0
+
+            for i in range(
+                time_str_to_int(self.timeStart.text(), self.freq),
+                time_str_to_int(self.timeEnd.text(), self.freq)
+            ):
+                amplitudes, used_vertices = self.EEGProcessor[i]
+
+                _, data_with_zone = self.brainWidget.get_zones_data(
+                    amplitudes,
+                    used_vertices,
+                    mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
+                    ampl=False
+                )
+
+                criteria = float(np.mean(np.abs(amplitudes)))
+
+                if (self.frame_criteria == 'max'):
+                    # Максимальная средняя активация (по модулю) среди всех зон
+                    found = criteria > found_criteria
+                else:
+                    # Минимальная средняя активация (по модулю) среди всех зон
+                    found = criteria < found_criteria
+                
+                if found:
+                    found_criteria = criteria
+                    found_data = data_with_zone
+                    found_timestamp = i
+
+            if self.saveMetadataCheck.isChecked():
+                time_col = np.full((found_data.shape[0], 1), found_timestamp)
+                block_full = np.hstack((time_col, found_data))
+            else:
+                block_full = found_data
+                
+            # Простое обрезание значений до 3-5 цифр после запятой
+            # позволяет уменьшить размер выходных данных во много раз!
+            block_compact = block_full.copy().astype(object)
+
+            for ci in range(block_full.shape[1]):
+                try:
+                    block_compact[:, ci] = np.round(
+                        block_full[:, ci].astype(float), 6
+                    )
+                except (ValueError, TypeError):
+                    pass
+            
+            writer.writerows(block_compact)
+
     @pyqtSlot()
     def apply(self):
         self.saveButton.setEnabled(False)
@@ -211,7 +347,10 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
             f'./{self.timeStart.text().replace(':', '')}_'
             + f'{int(float(self.numFramesTotal.text())
                   / float(self.numFramesPS.text()) * 1000)}_'
-            + f'{self.windowSpin.value()}_{self.strideSpin.value()}',
+            + (
+                (f'{self.windowSpin.value()}_{self.strideSpin.value()}')
+                if self.save_mode == 'full' else (f'f_{self.frame_criteria}')
+            ),
             '(*.csv);;All Files (*)'
         )
 
@@ -220,57 +359,10 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
             fields = ['Time', 'Zone'] + fields
 
         if filename:
-            with open(f'{filename}.csv', 'w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(fields)
-
-                for i in range(
-                    time_str_to_int(self.timeStart.text(), self.freq)
-                        + int(self.windowSpin.value() / 2),
-                    time_str_to_int(self.timeEnd.text(), self.freq)
-                        - int(self.windowSpin.value() / 2),
-                    self.strideSpin.value()
-                ):
-                    _data = []
-                    vertex_data_masked = []
-
-                    for j in range(
-                        i - int(self.windowSpin.value() / 2),
-                        i - int(self.windowSpin.value() / 2) + self.windowSpin.value()
-                    ):
-                        data, used_vertices = self.EEGProcessor[j]
-
-                        _, vertex_data_masked = self.brainWidget.get_zones_data(
-                            data,
-                            used_vertices,
-                            mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
-                            ampl=False
-                        )
-
-                        _data.append(vertex_data_masked[:, 3])
-                    
-                    if len(vertex_data_masked) > 0:
-                        vertex_data_masked[:, 3] = np.average(_data, 0)
-
-                        if self.saveMetadataCheck.isChecked():
-                            time_col = np.full((vertex_data_masked.shape[0], 1), i)
-                            block_full = np.hstack((time_col, vertex_data_masked))
-                        else:
-                            block_full = vertex_data_masked
-
-                        # Простое обрезание значений до 3-5 цифр после запятой
-                        # позволяет уменьшить размер выходных данных во много раз!
-                        block_compact = block_full.copy().astype(object)
-
-                        for ci in range(block_full.shape[1]):
-                            try:
-                                block_compact[:, ci] = np.round(
-                                    block_full[:, ci].astype(float), 6
-                                )
-                            except (ValueError, TypeError):
-                                pass
-                        
-                        writer.writerows(block_compact)
+            if self.save_mode == 'full':
+                self.save_as_full(filename, fields)
+            else:
+                self.save_as_frame(filename, fields)
 
             self.fileInfo.setText('Сохранено.')
         

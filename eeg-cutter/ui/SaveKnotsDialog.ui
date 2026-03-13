@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>518</width>
-    <height>385</height>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>200</x>
-     <y>344</y>
+     <y>430</y>
      <width>150</width>
      <height>31</height>
     </rect>
@@ -35,7 +35,7 @@
    <property name="geometry">
     <rect>
      <x>360</x>
-     <y>344</y>
+     <y>430</y>
      <width>151</width>
      <height>31</height>
     </rect>
@@ -65,16 +65,16 @@
    </property>
    <item>
     <property name="text">
-     <string>Все</string>
+     <string> Все</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Выбранные ранее</string>
+     <string> Выбранные ранее</string>
     </property>
    </item>
   </widget>
-  <widget class="QLabel" name="label">
+  <widget class="QLabel" name="comboLabel">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -92,12 +92,12 @@
     <string>Зоны мозга для сохранения:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_2">
+  <widget class="QLabel" name="optionsTitle">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>170</y>
-     <width>301</width>
+     <width>501</width>
      <height>31</height>
     </rect>
    </property>
@@ -107,62 +107,23 @@
     </font>
    </property>
    <property name="text">
-    <string>Средне-арифметическое усреднение:</string>
+    <string>Тип сохраняемых данных:</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="windowSpin">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>220</y>
-     <width>101</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>10000</number>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>60</x>
-     <y>220</y>
-     <width>55</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Окно:</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_5">
+  <widget class="QLabel" name="optionsDesc">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>195</y>
-     <width>391</width>
+     <width>501</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>(для уменьшения веса итогового файла)</string>
+    <string>(выберите, что необходимо сделать с выделенным отрезком)</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_6">
+  <widget class="QLabel" name="timeStartLabel">
    <property name="geometry">
     <rect>
      <x>40</x>
@@ -180,7 +141,7 @@
     <string>Начало:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_7">
+  <widget class="QLabel" name="timeEndLabel">
    <property name="geometry">
     <rect>
      <x>50</x>
@@ -202,7 +163,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>340</y>
+     <y>426</y>
      <width>181</width>
      <height>41</height>
     </rect>
@@ -237,50 +198,11 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="label_9">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>220</y>
-     <width>55</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Шаг:</string>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="strideSpin">
-   <property name="geometry">
-    <rect>
-     <x>320</x>
-     <y>220</y>
-     <width>101</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>12</pointsize>
-    </font>
-   </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>10000</number>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_10">
+  <widget class="QLabel" name="numFramesPSLabel">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>300</y>
+     <y>390</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -298,7 +220,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>300</y>
+     <y>390</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -312,11 +234,11 @@
     <string>0</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_11">
+  <widget class="QLabel" name="numFramesTotalLabel">
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>300</y>
+     <y>390</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -334,7 +256,7 @@
    <property name="geometry">
     <rect>
      <x>360</x>
-     <y>300</y>
+     <y>390</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -346,22 +268,6 @@
    </property>
    <property name="text">
     <string>0</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_4">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>280</y>
-     <width>501</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">border-top: 1px solid palette(text)</string>
-   </property>
-   <property name="text">
-    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="timeStartSetEnd5Button">
@@ -490,6 +396,298 @@
     <number>10000</number>
    </property>
   </widget>
+  <widget class="QStackedWidget" name="optionsContainer">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>270</y>
+     <width>481</width>
+     <height>91</height>
+    </rect>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="optionsFull">
+    <widget class="QLabel" name="optionsFullTitle">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>-5</y>
+       <width>501</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Средне-арифметическое усреднение:</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="strideSpin">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>50</y>
+       <width>101</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="optionsFullDesc">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>20</y>
+       <width>501</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>(для уменьшения веса итогового файла)</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="windowSpin">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>50</y>
+       <width>101</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="windowLabel">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>50</y>
+       <width>55</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Окно:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="strideLabel">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>50</y>
+       <width>55</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Шаг:</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="optionsFrame">
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <widget class="QLabel" name="optionsFrameDesc">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>20</y>
+       <width>501</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>(будет выбран один удовлетворяющий кадр из отрезка)</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="optionsFrameTitle">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>-5</y>
+       <width>501</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Условия выбора кадра:</string>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="frameMaxRadio">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>40</y>
+       <width>201</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Максимальные активации 
+в среднем по всем зонам</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="autoExclusive">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="frameMinRadio">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>40</y>
+       <width>201</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Минимальные активации 
+в среднем по всем зонам</string>
+     </property>
+     <property name="autoExclusive">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="optionsBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>260</y>
+     <width>501</width>
+     <height>111</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border: 1px solid palette(text); border-radius: 4px;</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="optionsModeGroup">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>220</y>
+     <width>501</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: transparent; border: none;</string>
+   </property>
+   <property name="title">
+    <string/>
+   </property>
+   <property name="flat">
+    <bool>true</bool>
+   </property>
+   <widget class="QRadioButton" name="optionsFrameRadio">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>0</y>
+      <width>231</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Кадр по заданным условиям</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="autoExclusive">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="optionsFullRadio">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>0</y>
+      <width>201</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Целый отрезок покадрово</string>
+    </property>
+    <property name="autoExclusive">
+     <bool>true</bool>
+    </property>
+   </widget>
+  </widget>
+  <zorder>optionsBox</zorder>
+  <zorder>saveButton</zorder>
+  <zorder>cancelButton</zorder>
+  <zorder>comboBox</zorder>
+  <zorder>comboLabel</zorder>
+  <zorder>optionsTitle</zorder>
+  <zorder>optionsDesc</zorder>
+  <zorder>timeStartLabel</zorder>
+  <zorder>timeEndLabel</zorder>
+  <zorder>fileInfo</zorder>
+  <zorder>saveMetadataCheck</zorder>
+  <zorder>numFramesPSLabel</zorder>
+  <zorder>numFramesPS</zorder>
+  <zorder>numFramesTotalLabel</zorder>
+  <zorder>numFramesTotal</zorder>
+  <zorder>timeStartSetEnd5Button</zorder>
+  <zorder>timeStartSetEnd10Button</zorder>
+  <zorder>timeStartSetEventButton</zorder>
+  <zorder>timeEndSetStart5Button</zorder>
+  <zorder>timeEndSetEventButton</zorder>
+  <zorder>timeEndSetStart10Button</zorder>
+  <zorder>timeStartPlaceholder</zorder>
+  <zorder>timeEndPlaceholder</zorder>
+  <zorder>optionsContainer</zorder>
+  <zorder>optionsModeGroup</zorder>
  </widget>
  <resources/>
  <connections/>
