@@ -1,0 +1,85 @@
+# For proper scaling support, all scales are set in width\height
+# percentiles (from 0.0 to 1.0). All ROIs are set as rectangles,
+# for which you'll need its top-left and bottom-right coordinates.
+# For example, a 65th by 177th pixel in a 800 x 600px picture
+# will be set (65 / 800) = 0.08125 and (177 / 600) = 0.295 values.
+
+# These two fields correspond to yellow and blue rectangles on
+# a picture above, and are used to exctract max and min current
+# values from image using OCR. They are required to be present.
+HMAP_MAX:
+    # Correspond to a top-left corner on a yellow rectangle to
+    # its width and height respectively:
+    - x1: 0.021200
+    - y1: 0.368500
+    # Correspond to a bottom-right corner on a yellow rectangle
+    # to its width and height respectively:
+    - x2: 0.105800
+    - y2: 0.408000
+
+HMAP_MIN:
+    # Correspond to a top-left corner on a blue rectangle to
+    # its width and height respectively:
+    - x1: 0.021200
+    - y1: 0.426600
+    # Correspond to a bottom-right corner on a blue rectangle
+    # to its width and height respectively:
+    - x2: 0.110500
+    - y2: 0.466800
+
+# All fields below are completely optional, each describing one
+# ROI, and using the same notation. Their names should be unique.
+
+top_avg:
+    - x1: 0.609000
+    - y1: 0.088600
+    - x2: 0.895400
+    - y2: 0.416200
+
+top_LF:
+    - x1: 0.609000
+    - y1: 0.088600
+    - x2: 0.714000
+    - y2: 0.197800
+top_MF:
+    - x1: 0.714000
+    - y1: 0.088600
+    - x2: 0.790400
+    - y2: 0.197800
+top_RF:
+    - x1: 0.790400
+    - y1: 0.088600
+    - x2: 0.895400
+    - y2: 0.197800
+
+top_LT:
+    - x1: 0.609000
+    - y1: 0.197800
+    - x2: 0.714000
+    - y2: 0.307000
+top_MC:
+    - x1: 0.714000
+    - y1: 0.197800
+    - x2: 0.790400
+    - y2: 0.307000
+top_RT:
+    - x1: 0.790400
+    - y1: 0.197800
+    - x2: 0.895400
+    - y2: 0.307000
+
+top_LP:
+    - x1: 0.609000
+    - y1: 0.307000
+    - x2: 0.714000
+    - y2: 0.416200
+top_MP:
+    - x1: 0.714000
+    - y1: 0.307000
+    - x2: 0.790400
+    - y2: 0.416200
+top_RP:
+    - x1: 0.790400
+    - y1: 0.307000
+    - x2: 0.895400
+    - y2: 0.416200
