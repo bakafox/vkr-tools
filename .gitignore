@@ -1,0 +1,14 @@
+# Globals
+**/*.pyc
+**/__pycache__
+**/*_OLD
+
+# Eeg-Cutter
+eeg-cutter/~cache_*
+
+# asa2power
+asa2power/example/output/
+
+# Repo structure
+DATA/
+OUTPUT_*/
