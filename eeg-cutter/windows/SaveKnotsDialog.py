@@ -1,3 +1,4 @@
+from pathlib import Path
 from PyQt5.QtWidgets import QFileDialog, QDialog
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5 import QtCore, QtGui
@@ -39,6 +40,7 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.EEGProcessor = EEGProcessor
         self.save_mode = init_mode
         self.frame_criteria = init_criteria
+        self.last_path = None # Типа чтобы путь всего 1 раз задавать надо было
 
         self.all_zones = dict(map(lambda zn: (zn, True), self.parent().zones.keys()))
         self.original_zones = self.brainWidget.zones
@@ -46,13 +48,13 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         font = QtGui.QFont()
         font.setPointSize(12)
         self.timeStart = TimeEditDelegate(time_now, time_max, self)
-        self.timeStart.setGeometry(QtCore.QRect(120, 50, 100, 30))
+        self.timeStart.setGeometry(QtCore.QRect(110, 50, 110, 30))
         self.timeStart.setFont(font)
         self.timeStart.setAlignment(QtCore.Qt.AlignCenter)
         self.timeStart.setObjectName('timeStart')
         self.timeStart.textChanged.connect(self.rewise_frames_num)
         self.timeEnd = TimeEditDelegate(time_max, time_max, self)
-        self.timeEnd.setGeometry(QtCore.QRect(120, 90, 100, 30))
+        self.timeEnd.setGeometry(QtCore.QRect(110, 90, 110, 30))
         self.timeEnd.setFont(font)
         self.timeEnd.setAlignment(QtCore.Qt.AlignCenter)
         self.timeEnd.setObjectName('timeEnd')
@@ -106,6 +108,7 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.saveButton.clicked.connect(self.apply)
 
         self.rewise_zones_in_use()
+        self.rewise_frames_num()
     
     @pyqtSlot()
     def rewise_zones_in_use(self):
@@ -118,7 +121,8 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.points_num, _ = self.brainWidget.get_zones_data(
             data,
             used_vertices,
-            ampl=False
+            False,
+            False
         )
         print(f'\n=== Число точек: {self.points_num}. ===\n')
 
@@ -227,7 +231,7 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.close()
 
     def save_as_full(self, filename, fields):
-        with open(f'{filename}.csv', 'w', newline='') as file:
+        with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(fields)
 
@@ -250,8 +254,8 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
                     _, data_with_zone = self.brainWidget.get_zones_data(
                         amplitudes,
                         used_vertices,
-                        mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
-                        ampl=False
+                        False,
+                        self.saveMetadataCheck.isChecked()
                     )
 
                     _data.append(data_with_zone[:, 3])
@@ -280,7 +284,7 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
                     writer.writerows(block_compact)
 
     def save_as_frame(self, filename, fields):
-        with open(f'{filename}.csv', 'w', newline='') as file:
+        with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(fields)
 
@@ -297,8 +301,8 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
                 _, data_with_zone = self.brainWidget.get_zones_data(
                     amplitudes,
                     used_vertices,
-                    mode=('full' if self.saveMetadataCheck.isChecked() else 'normal'),
-                    ampl=False
+                    False,
+                    self.saveMetadataCheck.isChecked(),
                 )
 
                 criteria = float(np.mean(np.abs(amplitudes)))
@@ -341,33 +345,42 @@ class SaveKnotsDialog(QDialog, Ui_SaveKnotsDialog):
         self.cancelButton.setEnabled(False)
         self.fileInfo.setText('Сохранение…')
 
-        filename, _ = QFileDialog.getSaveFileName(
-            None,
-            'Сохранение файла CSV',
+        filename = (
             f'./{self.timeStart.text().replace(':', '')}_'
             + f'{int(float(self.numFramesTotal.text())
-                  / float(self.numFramesPS.text()) * 1000)}_'
+                    / float(self.numFramesPS.text()) * 1000)}_'
             + (
                 (f'{self.windowSpin.value()}_{self.strideSpin.value()}')
                 if self.save_mode == 'full' else (f'f_{self.frame_criteria}')
-            ),
-            '(*.csv);;All Files (*)'
+            )
+            + '.csv'
         )
+
+        if not self.last_path:
+            filepath, _ = QFileDialog.getSaveFileName(
+                None,
+                'Выберите место сохранения файлов',
+                filename,
+                '(*.csv);;All Files (*)'
+            )
+            if not filepath:
+                self.rewise_file_size()
+                self.saveButton.setEnabled(True)
+                self.cancelButton.setEnabled(True)
+                return
+
+            self.last_path = Path(filepath).parent
+            self.saveButton.setText('Сохранить')
 
         fields = ['X', 'Y', 'Z', 'Amplitude']
         if self.saveMetadataCheck.isChecked():
             fields = ['Time', 'Zone'] + fields
 
-        if filename:
-            if self.save_mode == 'full':
-                self.save_as_full(filename, fields)
-            else:
-                self.save_as_frame(filename, fields)
-
-            self.fileInfo.setText('Сохранено.')
-        
+        if self.save_mode == 'full':
+            self.save_as_full(str(self.last_path / filename), fields)
         else:
-            self.rewise_file_size()
+            self.save_as_frame(str(self.last_path / filename), fields)
 
+        self.fileInfo.setText('Сохранено.')
         self.saveButton.setEnabled(True)
         self.cancelButton.setEnabled(True)

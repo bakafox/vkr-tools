@@ -94,7 +94,7 @@ class Ui_SaveKnotsDialog(object):
         self.numFramesTotalLabel.setFont(font)
         self.numFramesTotalLabel.setObjectName("numFramesTotalLabel")
         self.numFramesTotal = QtWidgets.QLabel(SaveKnotsDialog)
-        self.numFramesTotal.setGeometry(QtCore.QRect(360, 390, 151, 21))
+        self.numFramesTotal.setGeometry(QtCore.QRect(350, 390, 151, 21))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.numFramesTotal.setFont(font)
@@ -253,7 +253,7 @@ class Ui_SaveKnotsDialog(object):
     def retranslateUi(self, SaveKnotsDialog):
         _translate = QtCore.QCoreApplication.translate
         SaveKnotsDialog.setWindowTitle(_translate("SaveKnotsDialog", "Dialog"))
-        self.saveButton.setText(_translate("SaveKnotsDialog", "Сохранить"))
+        self.saveButton.setText(_translate("SaveKnotsDialog", "Сохранить…"))
         self.cancelButton.setText(_translate("SaveKnotsDialog", "Отмена"))
         self.comboBox.setItemText(0, _translate("SaveKnotsDialog", " Все"))
         self.comboBox.setItemText(1, _translate("SaveKnotsDialog", " Выбранные ранее"))

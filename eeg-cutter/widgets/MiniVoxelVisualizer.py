@@ -66,7 +66,7 @@ class MiniVoxelVisualizer(QOpenGLWidget):
         glClearColor(0.0, 0.0, 0.0, 1.0) # Черный фон
         glEnable(GL_DEPTH_TEST) # Включение теста глубины
         glEnable(GL_POINT_SMOOTH) # Сглаживание точек
-        glPointSize(5.0) # Размер точек
+        glPointSize(4.0) # Размер точек
 
     def resizeGL(self, w, h):
         # Настройка области просмотра

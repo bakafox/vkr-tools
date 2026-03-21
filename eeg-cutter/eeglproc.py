@@ -15,6 +15,7 @@ class LazyEEGProcessor:
             use_cache,
             cache_dir='~cache_',
             safety_factor=0.5,
+            use_std_coords=False
         ):
         self.filepath = Path(path_eeg)
         self.bad_channels = bad_channels
@@ -33,12 +34,18 @@ class LazyEEGProcessor:
         self.zones = load_zones(path_zones)
         self.reverse_zones = create_reverse_map(self.zones)
 
-        self._init_processing_environment()
+        self._init_processing_environment(use_std_coords)
 
-    def _init_processing_environment(self):
+    def _init_processing_environment(self, use_std_coords):
         # Не загружаем данные в память целиком, только метаданные
         self.raw = mne.io.read_raw_eeglab(self.filepath, preload=False)
 
+        # НЕ ИСПОЛЬЗОВАТЬ, кроме случаев, когда нет НИКАКИХ коориднат
+        if use_std_coords:
+            montage = mne.channels.make_standard_montage('standard_1020')
+            self.raw.set_montage(montage, match_case=False, on_missing='warn')
+
+        # Отбрасываем содержащие "плохие" координаты каналы
         if self.bad_channels:
             self.raw.drop_channels(self.bad_channels)
 

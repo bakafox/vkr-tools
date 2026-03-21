@@ -17,13 +17,11 @@ from windows.SaveKnotsDialog import SaveKnotsDialog
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, progname, use_cache):
+    def __init__(self, win_title, use_cache):
         super().__init__()
         self.setupUi(self)
 
-        self.setWindowTitle(progname)
         self.use_cache = use_cache
-
         self.freq = None
         self.events_array = None
         self.events_dict = None
@@ -31,12 +29,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.last_used_mode = 'frame'
         self.last_used_window = 1
-        self.last_used_stride = 10
+        self.last_used_stride = 1
         self.last_used_criteria = 'max'
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_parameters)
-        self.timer.setInterval(int(1000 / 1))
+        self.timer.setInterval(16) # Примерно 60 кадров в секунду
+        self.time_rem = 0.0
 
         self.YZBrain = MiniVoxelVisualizer(0, self.centralWidget_)
         self.YZBrain.setGeometry(QtCore.QRect(970, 10, 300, 300))
@@ -76,7 +75,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.XYScrollBar.setMaximum(max(0, self.XYBrain.maximum - 1))
         self.XYScrollBar.valueChanged.connect(self.XYScrollBar_slide)
 
-        self.fpsSpinBox.valueChanged.connect(self.fps_change)
+        # self.fpsSpinBox.valueChanged.connect(self.fps_change)
 
         self.amplitudeSpinBox.valueChanged.connect(self.amplitude_change)
         self.moduleCheckBox.clicked.connect(self.module_change)
@@ -102,7 +101,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.EEGProcessor = None
 
         try:
-            self.load_file()
+            self.load_file(win_title)
         except (OSError, FileNotFoundError):
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
@@ -113,7 +112,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             sys.exit(msg.exec_()) # ОТКЛЮЧИТЬ ДЛЯ ОТЛАДКИ ИНТЕРФЕЙСА
 
     @pyqtSlot()
-    def load_file(self):
+    def load_file(self, win_title=''):
         path_eeg = QFileDialog.getOpenFileName(
             self, 'Выберите файл записи ЭЭГ', '', '*.set'
         )[0]
@@ -167,7 +166,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         path_eeg,
                         path_zones,
                         [],
-                        self.use_cache
+                        self.use_cache,
+                        use_std_coords=True
                     )
 
             else:
@@ -179,6 +179,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 )
 
             print('\n=== Загрузка файла завершена. ===\n')
+
+            if (win_title):
+                self.setWindowTitle(f'{win_title} :: {path_eeg.split('/')[-1]}')
+            else:
+                self.setWindowTitle(f'{path_eeg.split('/')[-1]}')
 
             data, used_vertices = self.EEGProcessor[0]
             self.brainWidget.zone_texture = self.EEGProcessor.zone_texture
@@ -246,9 +251,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def XYScrollBar_slide(self):
         self.XYBrain.slider_frame(self.XYScrollBar.value())
 
-    @pyqtSlot()
-    def fps_change(self):
-        self.timer.setInterval(int(1000 / self.fpsSpinBox.value()))
+    # @pyqtSlot()
+    # def fps_change(self):
+    #     self.timer.setInterval(int(1000 / self.fpsSpinBox.value()))
 
     @pyqtSlot()
     def toggle_zone(self, zone):
@@ -328,10 +333,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.brainWidget.update()
     
     def update_parameters(self):
-        if self.horizontalScrollBar.value() < self.horizontalScrollBar.maximum():
-            self.nextButton_on_click()
+        # Таймер имеет частоту 60 ФПС, поэтому делис заявленный ФПС на 60:
+        self.time_rem += self.fpsSpinBox.value() / 60
+
+        if self.horizontalScrollBar.value() + self.time_rem < self.horizontalScrollBar.maximum():
+            time_update = int(self.time_rem)
+
+            if (time_update > 0):
+                self.horizontalScrollBar.setValue(
+                    self.horizontalScrollBar.value() + time_update
+                )
+                self.time_rem -= time_update
         else:
             self.timer.stop()
+            self.time_rem = 0.0
 
     @pyqtSlot(dict)
     def dict_update(self, value):

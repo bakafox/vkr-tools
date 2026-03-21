@@ -73,10 +73,9 @@ def find_intersected_point(cam_pos, ray_dir, vertices, point_radius=0.01):
 
 vertex_shader = """
 #version 330 core
-layout(location = 0) in vec3 position;
-layout(location = 1) in float value;
-layout(location = 2) in float alpha;
-layout(location = 3) in float zone_id;
+layout(location = 0) in float zone_id;
+layout(location = 1) in vec3 position;
+layout(location = 2) in float value;
 
 uniform mat4 projection;
 uniform mat4 view;
@@ -107,28 +106,31 @@ vec4 heatmap(float val, float alp) {
 void main() {
     bool zone_active = active_zones[int(zone_id)];
 
-    bool condition = true;
-    if (hidePoints) {
-        if (moduleVar == 1) {
-            condition = abs(value) > abs(amplitudeVar);
-        }
-        else {
-            if (amplitudeVar >= 0.0) {
-                condition = value >= amplitudeVar;
-            }
-            else {
-                condition = value < amplitudeVar;
-            }
+    bool condition;
+    if (moduleVar == 1) {
+        condition = abs(value) > abs(amplitudeVar);
+    } else {
+        if (amplitudeVar >= 0.0) {
+            condition = value >= amplitudeVar;
+        } else {
+            condition = value < amplitudeVar;
         }
     }
 
-    if (zone_active && condition) {
-        gl_Position = projection * view * model * vec4(position, 1.0);
-        color = heatmap(value, alpha);
-        gl_PointSize = 5.0;
-    } else {
+    gl_Position = projection * view * model * vec4(position, 1.0);
+
+    if (!zone_active) {
         gl_Position = vec4(-2.0, -2.0, -2.0, 1.0);
         gl_PointSize = 0.0;
+    } else if (hidePoints && !condition) {
+        gl_Position = vec4(-2.0, -2.0, -2.0, 1.0);
+        gl_PointSize = 0.0;
+    } else if (!condition) {
+        color = heatmap(value, 0.3); // Прозрачность 70%
+        gl_PointSize = 4.0;
+    } else {
+        color = heatmap(value, 1.0);
+        gl_PointSize = 6.0; // 8.0;
     }
 }
 """
@@ -187,9 +189,9 @@ class VoxelVisualizer(QOpenGLWidget):
     def add_data(self, data, vertices):
         self.data = data
         self.vertices = vertices
-        self.colors = np.array((len(self.vertices), 4))
+        self.colors = np.zeros((len(self.vertices), 4))
 
-        self.object_rotation = [90, 0]   # Углы поворота по осям X и Y
+        self.object_rotation = [0, 0]    # Поворот по осям X и Y
         self.object_translation = [0, 0] # Смещение по осям X и Y
         self.object_scale = 0.1          # Масштаб объекта
         self.last_mouse_position = None
@@ -215,8 +217,9 @@ class VoxelVisualizer(QOpenGLWidget):
     def initializeGL(self):
         glClearColor(0.0, 0.0, 0.0, 1.0) # Чёрный фон для стирания
 
-        # glEnable(GL_BLEND)
-        # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         glDisable(GL_LIGHTING)
         glDisable(GL_COLOR_MATERIAL)
         glEnable(GL_DEPTH_TEST)
@@ -242,14 +245,12 @@ class VoxelVisualizer(QOpenGLWidget):
         # glBindBuffer(GL_ARRAY_BUFFER, self.vbo_alphas)
 
         # Настройка атрибутов
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0) # positions
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(1) # values
-        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(16))
-        glEnableVertexAttribArray(2) # alphas
-        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(20))
-        glEnableVertexAttribArray(3) # zone_id
+        glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0) # ID зоны
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(4))
+        glEnableVertexAttribArray(1) # Координаты
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(16))
+        glEnableVertexAttribArray(2) # Амплитуда
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
@@ -259,8 +260,8 @@ class VoxelVisualizer(QOpenGLWidget):
             self,
             data,
             vertices,
-            ampl=True,
-            mode='normal',
+            amp_thres,
+            add_z_ids,
         ):
         if data is None:
             data = self.data
@@ -270,7 +271,7 @@ class VoxelVisualizer(QOpenGLWidget):
         if self.vertices is None or self.data is None:
             return 0, None
 
-        if ampl:
+        if amp_thres:
             active_idx = np.unique(self.zone_texture[data > self.amplitudeVar])
             self.zones = {name: (i+1) in active_idx for i, name in enumerate(ZONE_NAMES)}
 
@@ -282,25 +283,12 @@ class VoxelVisualizer(QOpenGLWidget):
         active_idx = [i+1 for i, name in enumerate(ZONE_NAMES) if self.zones[name]]
         mask = np.isin(self.zone_texture, active_idx)
 
-        if mode == 'full':
+        if add_z_ids:
             vertex_data = np.hstack([
                 self.zone_texture[mask, np.newaxis], # ID зоны
                 vertices[mask],                      # Координаты
                 data[mask, np.newaxis]               # Алмплитуда
             ]).astype(np.float32)
-
-        elif mode == 'render':
-            alphas = np.ones((len(self.vertices)))
-            alphas = alphas / 5 # Все точки вне порога будут иметь непрозрачность 20%
-            alphas[mask] = 1.0
-
-            vertex_data = np.hstack([
-                vertices,                        # Координаты
-                data[:, np.newaxis],             # Амплитуда
-                alphas[:, np.newaxis],           # Включения
-                self.zone_texture[:, np.newaxis] # ID зоны
-            ]).astype(np.float32)
-
         else:
             vertex_data = np.hstack([
                 vertices[mask],        # Координаты
@@ -310,15 +298,16 @@ class VoxelVisualizer(QOpenGLWidget):
         return len(vertices[mask]), vertex_data
 
     def update_buffers(self):
-        if self.vertices is None or self.data is None:
+        if self.vertices is None or self.data is None or self.zone_texture is None:
             return
 
-        _, vertex_data = self.get_zones_data(
+        vertex_count, vertex_data = self.get_zones_data(
             None,
             None,
-            mode='render',
-            ampl=False
+            False,
+            True
         )
+        self.vertex_count = vertex_count # len(self.vertices)
 
         glBindVertexArray(self.vao)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
@@ -327,8 +316,6 @@ class VoxelVisualizer(QOpenGLWidget):
 
         glBindVertexArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
-
-        self.vertex_count = len(self.vertices)
 
         if self.selected_point != -1:
             point = self.vertices[self.selected_point]
@@ -371,15 +358,15 @@ class VoxelVisualizer(QOpenGLWidget):
 
         glUniformMatrix4fv(
             glGetUniformLocation(self.shader_program, "projection"),
-            1, GL_FALSE, self.projection
+            1, GL_TRUE, self.projection
         )
         glUniformMatrix4fv(
             glGetUniformLocation(self.shader_program, "view"),
-            1, GL_FALSE, self.view
+            1, GL_TRUE, self.view
         )
         glUniformMatrix4fv(
             glGetUniformLocation(self.shader_program, "model"),
-            1, GL_FALSE, self.model
+            1, GL_TRUE, self.model
         )
         glUniform1i(
             glGetUniformLocation(self.shader_program, "moduleVar"),
@@ -430,23 +417,23 @@ class VoxelVisualizer(QOpenGLWidget):
     def perspective(self, fov, aspect, near, far):
         f = 1.0 / np.tan(np.radians(fov) / 2.0)
         return np.array([
-            [f / aspect, 0, 0, 0],
-            [0, f, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
+            [f / aspect, 0,  0,  0],
+            [0,          f,  0,  0],
+            [0,          0,  1,  0],
+            [0,          0,  0,  1]
         ], dtype=np.float32)
 
     def translate_matrix(self, matrix, vec):
         result = np.eye(4)
-        result[3, :3] = vec
-        return result @ matrix
+        result[:3, 3] = vec
+        return matrix @ result
 
     def scale_matrix(self, matrix, vec):
         result = np.eye(4)
         result[0, 0] = vec[0]
         result[1, 1] = vec[1]
         result[2, 2] = vec[2]
-        return result @ matrix
+        return matrix @ result
 
     def rotate_matrix(self, matrix, angle, axis):
         angle = np.radians(angle)
@@ -459,7 +446,7 @@ class VoxelVisualizer(QOpenGLWidget):
             [z * x * (1 - c) - y * s, z * y * (1 - c) + x * s, c + z ** 2 * (1 - c), 0],
             [0, 0, 0, 1]
         ])
-        return rot @ matrix
+        return matrix @ rot
 
     def draw_selested_point(self):
         # Сохраняем текущие настройки шейдера
@@ -469,11 +456,11 @@ class VoxelVisualizer(QOpenGLWidget):
         # Сохраняем текущие матрицы
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
-        glLoadMatrixf(self.projection)
+        glLoadMatrixf(self.projection.T)
 
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
-        glLoadMatrixf(self.view @ self.model)
+        glLoadMatrixf(self.model.T)
 
         # Рисуем точку
         glPointSize(15.0)
@@ -502,11 +489,11 @@ class VoxelVisualizer(QOpenGLWidget):
         # Сохраняем текущие матрицы
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
-        glLoadMatrixf(self.projection)
+        glLoadMatrixf(self.projection.T)
 
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
-        glLoadMatrixf(self.view @ self.model)
+        glLoadMatrixf(self.model.T)
 
         # Устанавливаем цвет и толщину линии
         glColor3f(1.0, 0.0, 0.0)
