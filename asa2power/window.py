@@ -6,7 +6,7 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QCoreApplication
 
 from colors import generate_random_fg, generate_random_bg
-from process import process_img
+from imgproc import process_cmap, process_img
 from ui.Preview import Ui_MainWindow
 
 
@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
             zones: list[tuple[str, dict]],
             img_paths: list[Path],
             out_dir: Path,
-            debugging: bool
+            debug_arr: list[str]
         ):
         super().__init__()
 
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         ]
         self._paths = img_paths
         self._out = out_dir
-        self._debug = debugging
+        self._debug = debug_arr
 
         self._populate_list()
         self._ui.canvas.set_zones(self._zones)
@@ -100,14 +100,22 @@ class MainWindow(QMainWindow):
         self._ui.btnNext.setEnabled(False)
         self._ui.btnProcess.setEnabled(False)
 
+        cmap_hues = process_cmap(
+            Path('colormap.png').resolve(),
+            self._debug
+        )
+
         results = []
         for ii, ip in enumerate(self._paths):
             self._ui.lblCursor.setText(
                 f'Обработка {ii + 1} изображения из {len(self._paths)}…'
             )
-            QCoreApplication.processEvents() # Иначе не перерисует
+
+            # Otherwise Python won't want for the text to update
+            QCoreApplication.processEvents()
+
             results.append(
-                process_img(ip, self._zones, self._out, self._debug)
+                process_img(ip, self._zones, cmap_hues, self._debug)
             )
 
         self._ui.lblCursor.setText(

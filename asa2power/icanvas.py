@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QLabel, QSizePolicy
 from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor, QFont
 from PyQt6.QtCore import Qt, pyqtSignal
 
-from process import cimg2qimg, get_cropped_img
+from imgproc.utils import cimg2qimg, get_cropped_img
 
 
 class ImageCanvas(QLabel):

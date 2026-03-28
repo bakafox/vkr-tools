@@ -13,7 +13,6 @@ if __name__ == '__main__':
     parser.add_argument('-i', type=str, default='./example/images')
     parser.add_argument('-z', type=str, default='./example/rect.yaml')
     parser.add_argument('-o', type=str, default='./example/output')
-    parser.add_argument('-d', type=bool, default=False)
     args = parser.parse_args()
 
     img_paths = sorted(
@@ -39,7 +38,12 @@ if __name__ == '__main__':
         zones,
         img_paths,
         Path(args.o),
-        args.d
+        [
+            'hdr', # Heatmap Digits Recognition
+            'ipp', # Image PreProcessing
+            'che', # Colormap Hues Evaluation
+            'cex', # Currents EXtraction
+        ]
     )
     window.show()
 
