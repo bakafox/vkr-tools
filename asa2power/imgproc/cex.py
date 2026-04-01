@@ -25,6 +25,8 @@ SAT_NOISE_THRES = 138 # 148 ?
 VAL_NOISE_THRES = 100
 VAL_GRIDS_THRES = 248
 
+REASONABLE_ZONES_THRES = 20.0
+
 
 def get_currents_img(
     img: cv2.typing.MatLike,
@@ -62,9 +64,9 @@ def get_currents_img(
     s[mask] = 0
     v[mask] = 0
 
-    # I also thought of applying median filter, but can't really
+    # I also thought of applying median filter, but I can't really
     # figure out how to use it without either mixing up the blacks
-    # or writing a 4-nested loop of supahslow Python code.
+    # or writing a multi-nested loop of supahslow Python code.
 
     img_res = cv2.merge([h, s, v])
 
@@ -97,36 +99,51 @@ def get_colormap_hues(
     return linear_hues
 
 
-def extract_zone_avg_current(
+def extract_zone_means(
     img: cv2.typing.MatLike,
     zone_info: tuple[str, dict, QColor],
     cmap_hues: list[np.uint8],
     hmap_min: float,
     hmap_max: float,
     visualize=False
-) -> list[float]:
+) -> dict[str, str | float | int]:
     img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
     x1_s = int(zone_info[1]['x1'] * img.shape[1])
     x2_s = int(zone_info[1]['x2'] * img.shape[1])
     y1_s = int(zone_info[1]['y1'] * img.shape[0])
     y2_s = int(zone_info[1]['y2'] * img.shape[0])
     zone_img = img_hsv[y1_s:y2_s, x1_s:x2_s]
 
-    cmap_powers = np.linspace(hmap_min, hmap_max, len(cmap_hues))
+    cmap_powers = np.linspace(hmap_max, hmap_min, len(cmap_hues))
 
-    # TODO: Учитывать не только Hue, но и Saturation (на самом деле
-    # хз, надо ли оно, потому что главная проблема это их неучёта
-    # связана как будто бы ток с визуализацией, плотность по ним не
-    # посчитать из-за наложенного под активностями черно-белого МРТ,
-    # а токи это находить мало мешает, ибо разница в Hue там есть)
-
-    # Eucludian distance here was supah slow! So, a lookup table:
+    # Per-pixel Eucludian distance here was slow! So, a lookup table:
     cmap_lookup = np.interp(
-        np.arange(cmap_hues[0], cmap_hues[-1]), cmap_hues, cmap_powers
+        np.arange(0, 180), cmap_hues, cmap_powers
     )
 
+    # I originally though of using emboss (45 deg) to detect EEG overlay
+    # boundaries, effectively determining total size, however my tests
+    # have shown that this method quite often doesn't result in correct
+    # boundaries due to MRI contast varations, which is why, in the end,
+    # I decided to use this simpler and, to an extent, dumder approach:
+    zone_active = zone_img[:, :, 2] >= VAL_NOISE_THRES
+    zone_pct = zone_img[zone_active].size / zone_img.size * 100
+
+    zone_colors = zone_img[:, :, 0][zone_active]
+    zone_values = cmap_lookup[zone_colors.astype(int)]
+
     if visualize:
-        new_img = np.zeros(img.shape, dtype=np.uint8)
+        if not len(zone_colors):
+            zone_colors = np.array([-1.0])
+            new_img = np.full(img.shape, [0, 0, 0], np.uint8)
+        else:
+            new_img = np.full(img.shape, [np.mean(zone_colors), 255, 200], np.uint8)
+
+        new_img[
+            y1_s - 1 : y1_s + zone_img.shape[0] + 1,
+            x1_s - 1 : x1_s + zone_img.shape[1] + 1
+        ] = [5 if (zone_pct < REASONABLE_ZONES_THRES) else 75, 200, 255]
 
         for y in range(zone_img.shape[0]):
             for x in range(zone_img.shape[1]):
@@ -140,16 +157,27 @@ def extract_zone_avg_current(
 
                 new_img[y1_s + y, x1_s + x] = new_pixel
 
-        cv2.imshow(zone_info[0], cv2.cvtColor(new_img, cv2.COLOR_HSV2BGR))
+        win_name = (
+            f'{zone_info[0]} // {zone_pct:.2f}% // {hmap_max} > '
+            + f'{np.mean(zone_values)} [{int(np.mean(zone_colors))}] > {hmap_min}'
+        )
+        cv2.imshow(win_name, cv2.cvtColor(new_img, cv2.COLOR_HSV2BGR))
         cv2.setMouseCallback(
-            zone_info[0],
+            win_name,
             lambda e, x, y, f, p: dbg_print_hsv(new_img, e, x, y, f, p)
         )
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-        # TODO: Придумать, что же делать с вычислением активности не
-        # только по активациям, но и по количеству точек вообще (сейчас
-        # выходит, что если в области 2 шумных точки, она 100% активна)
+    if zone_pct < REASONABLE_ZONES_THRES:
+        return {
+            'zone': zone_info[0],
+            'amplitude': 0.0,
+            'color': -1
+        }
 
-    # print(cmap_lookup)
+    return {
+        'zone': zone_info[0],
+        'amplitude': float(np.mean(zone_values)),
+        'color': int(np.mean(zone_colors))
+    }

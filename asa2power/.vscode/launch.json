@@ -11,8 +11,8 @@
             "program": "main.py",
             "console": "integratedTerminal",
             // "args": "-i ../DATA/asa3d/24_02_25_BMet_24_001"
-            "args": "-i ../DATA/asa3d/sample"
-            // "args": "-i ../DATA/asa3d/24_05_15_Golovanova_Marina"
+            // "args": "-i ../DATA/asa3d/24_04_30_BMet_24_005"
+            "args": "-i ../DATA/asa3d/24_05_15_Golovanova_Marina"
         }
     ]
 }

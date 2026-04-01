@@ -1,11 +1,11 @@
 import argparse
 import sys
 from pathlib import Path
-import yaml
 
 from PyQt6.QtWidgets import QApplication
 
 from window import MainWindow
+from yamls import load_zones
 
 
 if __name__ == '__main__':
@@ -19,18 +19,7 @@ if __name__ == '__main__':
         ip for ip in Path(args.i).iterdir() if ip.is_file()
     )
 
-    zones = []
-    with open(args.z) as f_yaml:
-        zones_raw = yaml.safe_load(f_yaml)
-        for name, entries in zones_raw.items():
-            coords: dict = {}
-            if not isinstance(entries, list):
-                continue
-            for item in entries:
-                if isinstance(item, dict):
-                    coords.update(item)
-            if len(coords) == 4:
-                zones.append((name, coords))
+    zones = load_zones(Path(args.z))
 
     app = QApplication(sys.argv)
 
@@ -39,12 +28,13 @@ if __name__ == '__main__':
         img_paths,
         Path(args.o),
         [
-            'hdr', # Heatmap Digits Recognition
-            'ipp', # Image PreProcessing
-            'che', # Colormap Hues Evaluation
-            'cex', # Currents EXtraction
+            # 'hdr', # Heatmap Digits Recognition
+            # 'ipp', # Image PreProcessing
+            # 'chm', # Colormap Hues Mapping
+            # 'zce', # Zone Currents Evaluation
         ]
     )
+
     window.show()
 
     sys.exit(app.exec())

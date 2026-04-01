@@ -2,7 +2,7 @@ from pathlib import Path
 from PyQt6.QtGui import QColor
 import numpy as np
 
-from imgproc.cex import extract_zone_avg_current, get_currents_img, get_colormap_hues
+from imgproc.cex import extract_zone_means, get_currents_img, get_colormap_hues
 from imgproc.ocr import read_hmap_digits
 from imgproc.utils import get_cropped_img
 
@@ -14,7 +14,7 @@ def process_cmap(
     cmap = get_cropped_img(cmap_path, tol=0)
     
     cmap_hues = get_colormap_hues(cmap)
-    if ('che' in debug_arr):
+    if ('chm' in debug_arr):
         print(cmap_hues, len(cmap_hues))
 
     return cmap_hues
@@ -25,7 +25,7 @@ def process_img(
     zones: list[tuple[str, dict, QColor]],
     cmap_hues: list[np.uint8],
     debug_arr: list[str] = []
-):
+) -> tuple[str, list[dict[str, str | float | int]]]:
     hmap_max_coords = filter(lambda z: z[0] == 'HMAP_MAX', zones)
     try:
         hmap_max_coords = next(hmap_max_coords)[1]
@@ -45,16 +45,20 @@ def process_img(
 
     currents_img = get_currents_img(img, ('ipp' in debug_arr))
 
-    currents = dict()
+    currents = []
     for zone in zones:
         if zone[0] in ['HMAP_MAX', 'HMAP_MIN']:
             continue
 
-        currents[zone[0]] = extract_zone_avg_current(
-            currents_img,
-            zone,
-            cmap_hues,
-            hmap_min,
-            hmap_max,
-            ('cex' in debug_arr)
+        currents.append(
+            extract_zone_means(
+                currents_img,
+                zone,
+                cmap_hues,
+                hmap_min,
+                hmap_max,
+                ('zce' in debug_arr)
+            )
         )
+    
+    return (img_path.stem, currents)

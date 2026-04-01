@@ -1,13 +1,14 @@
 from pathlib import Path
 import pyperclip
 
-from PyQt6.QtWidgets import QMainWindow, QListWidgetItem
+from PyQt6.QtWidgets import QMainWindow, QListWidgetItem, QMessageBox
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QCoreApplication
 
 from colors import generate_random_fg, generate_random_bg
 from imgproc import process_cmap, process_img
 from ui.Preview import Ui_MainWindow
+from yamls import save_results
 
 
 class MainWindow(QMainWindow):
@@ -96,6 +97,17 @@ class MainWindow(QMainWindow):
         self._ui.canvas.set_image(self._paths[self._index])
 
     def _process(self):
+        if Path.exists(self._out):
+            msg = QMessageBox.warning(
+                self,
+                self.windowTitle(),
+                'Папка выходных данных уже существует! Продолжить?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if msg == QMessageBox.StandardButton.No:
+                return
+
         self._ui.btnPrev.setEnabled(False)
         self._ui.btnNext.setEnabled(False)
         self._ui.btnProcess.setEnabled(False)
@@ -111,16 +123,18 @@ class MainWindow(QMainWindow):
                 f'Обработка {ii + 1} изображения из {len(self._paths)}…'
             )
 
-            # Otherwise Python won't want for the text to update
+            # Otherwise Python won't wait for the text to update
             QCoreApplication.processEvents()
 
             results.append(
                 process_img(ip, self._zones, cmap_hues, self._debug)
             )
 
-        self._ui.lblCursor.setText(
-            f'Обработка изображений завершена.'
-        )
+        self._ui.lblCursor.setText('Сохранение результатов обработки…')
+        
+        save_results(results, self._out)
+
+        self._ui.lblCursor.setText('Обработка изображений завершена.')
         self._ui.btnPrev.setEnabled(True)
         self._ui.btnNext.setEnabled(True)
         self._ui.btnProcess.setEnabled(True)

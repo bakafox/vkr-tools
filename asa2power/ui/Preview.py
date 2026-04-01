@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "asa2power v26-03-28"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "asa2power v26-04-02"))
         self.lblCursor.setText(_translate("MainWindow", " Наведите курсор на изображ-е, чтобы\n"
 " увидеть его координаты в px и в 0…1."))
         self.btnProcess.setText(_translate("MainWindow", "Запустить обработку"))
