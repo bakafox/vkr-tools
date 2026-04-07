@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PreviewWindow</class>
+ <widget class="QMainWindow" name="PreviewWindow">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1000</width><height>680</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>EEG-Cutter :: Просмотр экспортированных кадров</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="mainLayout">
+
+    <item>
+     <widget class="QLabel" name="canvasLabel">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="styleSheet"><string>background:#111;</string></property>
+      <property name="text"><string/></property>
+      <property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property>
+     </widget>
+    </item>
+
+    <item>
+     <widget class="QWidget" name="sidebarWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumWidth"><number>220</number></property>
+      <property name="maximumWidth"><number>220</number></property>
+      <layout class="QVBoxLayout" name="ctrlLayout">
+       <property name="spacing"><number>8</number></property>
+
+       <item>
+        <widget class="QLineEdit" name="lineEditFile">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>ФАЙЛ НЕ ВЫБРАН</string></property>
+         <property name="readOnly"><bool>true</bool></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnBrowse">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Открыть другой файл…</string></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="hline1">
+         <property name="maximumSize"><size><width>16777215</width><height>1</height></size></property>
+         <property name="styleSheet"><string notr="true">border: 1px solid palette(text);</string></property>
+         <property name="text"><string/></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QRadioButton" name="radioAllZones">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Отображать все зоны</string></property>
+         <property name="checked"><bool>true</bool></property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="radioZoneWrap">
+         <property name="spacing"><number>8</number></property>
+         <item>
+          <widget class="QRadioButton" name="radioOneZone">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Только 1:</string></property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboZone">
+           <property name="enabled"><bool>false</bool></property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="hline2">
+         <property name="maximumSize"><size><width>16777215</width><height>1</height></size></property>
+         <property name="styleSheet"><string notr="true">border: 1px solid palette(text);</string></property>
+         <property name="text"><string/></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="labelRotation">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Поворот: 0 градусов</string></property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout">
+         <property name="spacing"><number>4</number></property>
+         <item><widget class="QPushButton" name="btnRotateCCW"><property name="text"><string>CCW 45</string></property></widget></item>
+         <item><widget class="QPushButton" name="btnRotateCW"><property name="text"><string>CW 45</string></property></widget></item>
+         <item><widget class="QPushButton" name="btnResetView"><property name="text"><string>Сброс</string></property></widget></item>
+        </layout>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="hline3">
+         <property name="maximumSize"><size><width>16777215</width><height>1</height></size></property>
+         <property name="styleSheet"><string notr="true">border: 1px solid palette(text);</string></property>
+         <property name="text"><string/></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="labelElevationHeader">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Вертикальное положение</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="sliderElevation">
+         <property name="minimum"><number>-90</number></property>
+         <property name="maximum"><number>90</number></property>
+         <property name="value"><number>20</number></property>
+         <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="labelScale">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Масштаб: 100 %</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="sliderScale">
+         <property name="minimum"><number>10</number></property>
+         <property name="maximum"><number>500</number></property>
+         <property name="value"><number>100</number></property>
+         <property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="hline4">
+         <property name="maximumSize"><size><width>16777215</width><height>1</height></size></property>
+         <property name="styleSheet"><string notr="true">border: 1px solid palette(text);</string></property>
+         <property name="text"><string/></property>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="labelInfoHeader">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Сведения о точке</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTextEdit" name="textInfo">
+         <property name="readOnly"><bool>true</bool></property>
+         <property name="placeholderText"><string>Выберите точку, чтобы просмотреть сведения о ней.</string></property>
+        </widget>
+       </item>
+
+       <item>
+        <spacer>
+         <property name="orientation"><enum>Qt::Orientation::Vertical</enum></property>
+         <property name="sizeHint" stdset="0"><size><width>0</width><height>0</height></size></property>
+        </spacer>
+       </item>
+
+       <item>
+        <widget class="QLabel" name="labelLegendHeader">
+         <property name="font"><font><pointsize>12</pointsize></font></property>
+         <property name="text"><string>Амплитудный диапазон:</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="labelLegend">
+         <property name="text"><string>СИН: -99.99 / ЗЕЛ: 0.00 / КРА: 99.99</string></property>
+         <property name="wordWrap"><bool>true</bool></property>
+        </widget>
+       </item>
+
+      </layout>
+     </widget>
+    </item>
+
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
