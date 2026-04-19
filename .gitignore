@@ -3,12 +3,15 @@
 **/__pycache__
 **/*_OLD
 
-# EEG-Cutter
-eeg-cutter/~cache_*
-
-# asa2power
-asa2power/example/output/
-
 # Repo structure
 DATA/
 OUTPUT_*/
+
+# EEG-Cutter cached EEG
+eeg-cutter/~cache_*
+
+# asa2power test output
+asa2power/example/output/
+
+# NeuralNets local data
+neuralnets/**/~*
