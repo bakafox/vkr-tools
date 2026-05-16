@@ -31,6 +31,8 @@ def convert_eegc_activity(
     path_input: Path,
     path_out: Path | None = None
 ) -> dict[str, float]:
+    """Перевод кадра с ампл. по вершинам зон в словарь вида { ЗОНА: СР.АМПЛ. }"""
+
     df_input = pd.read_csv(path_input)
     df_input['Zone'] = df_input['Zone'].astype(int) # 5.0 --> 5
     zone_means = (
@@ -49,6 +51,7 @@ def convert_eegc_activity(
             list(result.items()),
             columns=['Zone', 'Amplitude']
         )
+
         path_out = Path(path_out)
         path_out.parent.mkdir(parents=True, exist_ok=True)
         df_out.to_csv(path_out, index=False)
@@ -60,6 +63,7 @@ def read_zone_activations(
     path_activity: Path
 ) -> dict[str, float]:
     df = pd.read_csv(path_activity)
+    """Чтение уже конвертированных канных, сохранённых функцией выше"""
 
     return dict(
         zip(df['Zone'], df['Amplitude'].astype(float))

@@ -17,6 +17,8 @@ def confusion_report(
     noimg: bool = False,
     notxt: bool = False,
 ) -> dict:
+    """Очень простой визуализатор данных и ошибки на многих классах,
+    имеющих чёткое линейное разделение друг от друга по числовой оси"""
     y_cls = np.digitize(y_true, boundaries[1:-1])
     p_cls = np.digitize(y_pred, boundaries[1:-1])
 
@@ -64,6 +66,8 @@ def vis_importances_map(
     suptitle: str = 'Карта важности признаков',
     cmap_limits: tuple[float, float] | None = (-0.001, 0.001)
 ) -> None:
+    """Визуализатор feature importance для результатов модели для
+    простр. (mode='spacial') и спектр. (mode='spectral') хар-к"""
     cmap = plt.cm.PiYG
 
     if cmap_limits is not None:
@@ -153,6 +157,10 @@ def vis_circular_accuracy(
     lpos: tuple[float, float] = (1.00, 1.00),
     text: str = ''
 ) -> None:
+    """Визуализатор данных в виде розы ветров (на самом деле
+    это просто секторальная диаграмма, потому что роза ветров
+    на моих данных выглядела просто максимально нечитабельно,
+    но научрук просила именно розу ветров, так что...)"""
     assert(len(errors_a) == len(errors_b) == len(labels))
 
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={'projection': 'polar'})
