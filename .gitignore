@@ -15,3 +15,6 @@ asa2power/example/output/
 
 # NeuralNets local data
 neuralnets/**/~*
+
+# NeuralNets files for 10 runs
+neuralnets/10_RUNS/*

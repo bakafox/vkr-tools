@@ -21,7 +21,9 @@ As of architecture, I used fully connected (FC) networks for simplicity. Augment
 
 ## newgoal
 
-The actual goal of my thesis, find and maximize correlations between ghedonic assesments of subjects and various characteristics obtained from their EEG records (and which exactly characteristics or their parts should be used, either together or separately). ***WORK IN PROGRESS!***
+The actual goal of my thesis, find and maximize correlations between ghedonic assesments of subjects and various characteristics obtained from their EEG records (and which exactly characteristics or their parts should be used, either together or separately).
+
+To make the results more objective even despite a limited dataset, versions **3.1**, **3.2**, **3.3** and **3.4** were ran 10 times, with 10 randomly chosen (but the same across each session) seeds.
 
 - **1.0** — basic implementation, code still majorly based on `hypothesis` notebook
 - **1.1** — added data scaling and sLORETA percentile clipping, which improved accuracy significantly
@@ -31,6 +33,7 @@ The actual goal of my thesis, find and maximize correlations between ghedonic as
 - **3.0** — use dataset pruning based on FIA (resulted in noticeable accuracy improvement), add metainfo-only model comparison, small tweaks to feature analysis visualizations
 - **3.1** — replaced K-Fold cross-validation strategy with LeaveOneGroupOut (LOGO) to check the "model doesn't actually need categories" hypothesis, better ensemble weighing (both improved the accuracy notably), other improvements
 - **3.2** — version `3.1` with K-Fold instead of LOGO cross-validation
-- **3.3** — version `3.1` without LOGO cross-validation, dataset pruning, and dummy model
+- **3.3** — version `3.1` with K-Fold instead of LOGO, without dataset pruning and dummy model
+- **3.4** — version `3.1` without dataset pruning and dummy model
 
 If you're interested in using the code for the further research, I recomming using **3.1** since it gives the best accuracy.
