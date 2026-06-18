@@ -21,7 +21,7 @@ As of architecture, I used fully connected (FC) networks for simplicity. Augment
 
 ## newgoal
 
-The actual goal of my thesis, find and maximize correlations between ghedonic assesments of subjects and various characteristics obtained from their EEG records (and which exactly characteristics or their parts should be used, either together or separately).
+The final goal of my thesis we agreed with my prof on: find and maximize correlations between ghedonic assesments of subjects and various characteristics obtained from their EEG records (and which exactly characteristics or their parts should be used, either together or separately).
 
 To make the results more objective even despite a limited dataset, versions **`3.1`**, **`3.2`**, **`3.3`** and **`3.4`** were ran 10 times, with 10 randomly chosen (but the same across each session) seeds.
 
@@ -36,4 +36,7 @@ To make the results more objective even despite a limited dataset, versions **`3
 - **`3.3`** — version `3.1` with K-Fold instead of LOGO, without dataset pruning and dummy model
 - **`3.4`** — version `3.1` without dataset pruning and dummy model
 
-If you're interested in using the code for the further research, I recommend using **`3.1`** since, based on both metrics and my tests, it gives the best accuracy.
+If you're interested in using the code for the further research, I recommend using **`3.1`** (or **`3.2`** if you cannot divive your data by subjects), as, based on both metrics and my tests, it should give you the best accuracy. There are also a few notable variations available for some versions:
+
+- **_CB** — uses CatBoostClassifier as a baseline, not used in thesis directly but has been added to the final defense presentaion based on feedback I received on pre-defence
+- **_export** — final verified versions I submitted for my thesis, based on `3.1` and `3.2`, mostly only different in having more clear Markdown explanations and redundant code / comments removed
